@@ -1,0 +1,25 @@
+{
+  "name": "totem_escola",
+  "version": "1.0.0",
+  "description": "Site para totem de reprodução de vídeos informativos e avisos escolares",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "type": "commonjs",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/PllucianoCarvalho/totem_escola.git"
+  },
+  "bugs": {
+    "url": "https://github.com/PllucianoCarvalho/totem_escola/issues"
+  },
+  "homepage": "https://github.com/PllucianoCarvalho/totem_escola#readme",
+  "dependencies": {
+    "better-sqlite3": "^13.0.3",
+    "express": "^5.2.1"
+  }
+}
