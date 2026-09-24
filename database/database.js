@@ -1,14 +1,18 @@
 const Database = require("better-sqlite3");
 const path = require("path");
+const fs = require("fs");
 
-const databasePath = path.join(__dirname, "totem.db");
+const dataPath = path.join(__dirname, "..", "dados");
+
+fs.mkdirSync(dataPath, { recursive: true });
+fs.mkdirSync(path.join(dataPath, "videos"), { recursive: true });
+
+const databasePath = path.join(dataPath, "totem.db");
 
 const db = new Database(databasePath);
 
-// Ativa integridade das chaves estrangeiras
 db.pragma("foreign_keys = ON");
 
-// Cria as tabelas caso ainda não existam
 db.exec(`
     CREATE TABLE IF NOT EXISTS configuracoes (
         id INTEGER PRIMARY KEY CHECK (id = 1),
@@ -24,7 +28,6 @@ db.exec(`
     );
 `);
 
-// Garante que exista uma configuração inicial
 db.prepare(`
     INSERT OR IGNORE INTO configuracoes (id, video)
     VALUES (1, NULL)

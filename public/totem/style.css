@@ -1,36 +1,73 @@
-* {
-    margin: 0;
-    padding: 0;
-    box-sizing: border-box;
-}
-
 html,
 body {
+    margin: 0;
+    padding: 0;
+
     width: 100%;
     height: 100%;
+
     overflow: hidden;
-    background: #000;
+
+    background: black;
 }
 
 #totem {
+    position: relative;
+
     width: 100vw;
     height: 100vh;
-    position: relative;
-    background: #000;
+
     overflow: hidden;
 }
 
 #video {
+    position: absolute;
+
     width: 100%;
     height: 100%;
+
     object-fit: contain;
-    display: block;
+
+    top: 0;
+    left: 0;
+
+    background: black;
 }
 
 #aviso {
+    display: none;
+
     position: absolute;
+
     left: 5%;
     right: 5%;
     bottom: 5%;
-    display: none;
+
+    padding: 20px;
+
+    background: rgba(0, 0, 0, 0.85);
+
+    color: white;
+
+    text-align: center;
+
+    font-size: clamp(20px, 3vw, 42px);
+    font-weight: bold;
+
+    border-radius: 15px;
+
+    z-index: 10;
+}
+
+#totem {
+    position: relative;
+
+    width: 100vw;
+    height: 100vh;
+
+    aspect-ratio: 9 / 16;
+
+    overflow: hidden;
+
+    background: black;
 }

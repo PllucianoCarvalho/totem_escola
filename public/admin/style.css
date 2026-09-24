@@ -1,0 +1,90 @@
+* {
+    box-sizing: border-box;
+}
+
+body {
+    margin: 0;
+    font-family: Arial, sans-serif;
+    background: #f2f2f2;
+}
+
+.painel {
+    max-width: 800px;
+    margin: 40px auto;
+    padding: 30px;
+    background: white;
+    border-radius: 12px;
+}
+
+section {
+    margin-top: 35px;
+}
+
+h1 {
+    margin-top: 0;
+}
+
+input,
+textarea {
+    display: block;
+    width: 100%;
+    max-width: 600px;
+    margin: 8px 0 18px;
+    padding: 10px;
+    font-size: 15px;
+}
+
+textarea {
+    min-height: 100px;
+    resize: vertical;
+}
+
+button {
+    padding: 10px 16px;
+    border: 0;
+    border-radius: 6px;
+    cursor: pointer;
+    font-size: 15px;
+}
+
+.video-item,
+.aviso-item {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 15px;
+
+    padding: 15px;
+    margin-bottom: 10px;
+
+    border: 1px solid #ddd;
+    border-radius: 8px;
+}
+
+.ativo {
+    margin-left: auto;
+}
+
+.aviso-item {
+    align-items: flex-start;
+}
+
+.aviso-item small {
+    line-height: 1.8;
+}
+
+#statusVideo,
+#statusAviso {
+    margin-top: 15px;
+    min-height: 20px;
+}
+
+.botoes-video {
+    display: flex;
+    gap: 8px;
+}
+
+.botoes-aviso {
+    display: flex;
+    gap: 8px;
+}
