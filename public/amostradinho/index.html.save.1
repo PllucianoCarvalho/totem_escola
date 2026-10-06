@@ -1,0 +1,150 @@
+```html
+<!DOCTYPE html>
+<html lang="pt-BR">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <title>Administração do Totem</title>
+
+    <link rel="stylesheet" href="style.css">
+</head>
+
+<body>
+
+    <main class="painel">
+
+        <h1>Totem Escolar</h1>
+
+        <section>
+            <h2>Vídeos disponíveis</h2>
+
+            <div id="listaVideos">
+                Carregando vídeos...
+            </div>
+        </section>
+
+        <section>
+
+            <h2>Adicionar vídeo</h2>
+
+            <form id="videoForm">
+
+                <input
+                    type="file"
+                    id="videoInput"
+                    name="video"
+                    accept="video/*"
+                    required
+                >
+
+                <button type="submit">
+                    Enviar vídeo
+                </button>
+
+            </form>
+
+            <p id="statusVideo"></p>
+
+        </section>
+
+        <section>
+
+            <h2>Imagem após o vídeo</h2>
+
+            <form id="imagemForm">
+
+                <input
+                    type="file"
+                    id="imagemInput"
+                    name="imagem"
+                    accept="image/*"
+                    required
+                >
+
+                <label for="duracaoImagem">
+                    Tempo da imagem (segundos)
+                </label>
+
+                <input
+                    type="number"
+                    id="duracaoImagem"
+                    min="1"
+                    value="10"
+                    required
+                >
+
+                <button type="submit">
+                    Publicar imagem
+                </button>
+
+            </form>
+	<h3>Imagem publicada atualmente</h3>
+
+<div id="listaImagem">
+    Carregando imagem...
+</div>
+
+            <p id="statusImagem"></p>
+
+        </section>
+
+        <section>
+
+            <h2>Avisos</h2>
+
+            <form id="avisoForm">
+
+                <label for="mensagem">
+                    Mensagem
+                </label>
+
+                <textarea
+                    id="mensagem"
+                    required
+                    placeholder="Digite o aviso..."
+                ></textarea>
+
+                <label for="inicio">
+                    Início
+                </label>
+
+                <input
+                    type="datetime-local"
+                    id="inicio"
+                    required
+                >
+
+                <label for="fim">
+                    Fim
+                </label>
+
+                <input
+                    type="datetime-local"
+                    id="fim"
+                    required
+                >
+
+                <button type="submit">
+                    Publicar aviso
+                </button>
+
+            </form>
+
+            <p id="statusAviso"></p>
+
+            <div id="listaAvisos">
+                Carregando avisos...
+            </div>
+
+        </section>
+
+    </main>
+
+    <script src="script.js"></script>
+
+</body>
+
+</html>
+```
