@@ -188,6 +188,86 @@ O computador responsável pelo totem pode permanecer dedicado à exibição, enq
 
 ---
 
+## 📚 Histórico de desenvolvimento
+
+O sistema foi sendo estruturado como uma aplicação web para administrar os conteúdos apresentados em uma tela escolar dedicada. A implementação atual reúne servidor, interface do totem, painel administrativo, APIs e armazenamento local.
+
+### 1. Servidor e organização
+
+O servidor é executado com Node.js e Express. O arquivo `server.js` configura as rotas HTTP, serve as interfaces e recebe as solicitações do painel e do totem.
+
+```text
+Navegador
+    │ HTTP
+    ▼
+Express / Node.js
+    ├── Interface web
+    ├── API
+    ├── Banco SQLite
+    └── Arquivos de mídia locais
+```
+
+As dependências são instaladas com `npm install`, e o servidor pode ser iniciado pelo script `npm start` definido em `package.json`.
+
+### 2. Banco de dados
+
+O SQLite é acessado pela biblioteca `better-sqlite3`, sem a necessidade de manter um servidor de banco separado. A inicialização do banco cria as tabelas `configuracoes` e `avisos`, caso ainda não existam:
+
+- `configuracoes` guarda o nome do vídeo ativo;
+- `avisos` guarda a mensagem e os horários de início e fim.
+
+O banco da instalação local fica em `dados/totem.db` e é ignorado pelo Git.
+
+### 3. Upload e gerenciamento de mídia
+
+O Multer recebe os uploads enviados pelo painel. Vídeos são armazenados em `dados/videos/`, com limite de upload de 500 MB. Imagens são armazenadas em `dados/imagens/`, com limite de 10 MB; a imagem selecionada e sua duração são configuradas em `dados/imagem.json`.
+
+O painel permite consultar os vídeos, selecionar o vídeo ativo, enviar mídia e remover vídeos que não estejam em uso. Os arquivos enviados ficam na instalação local e não são versionados.
+
+### 4. Avisos e APIs
+
+As rotas da API conectam o painel administrativo ao servidor e ao banco de dados. Além das operações listadas na seção [API](#api), o servidor disponibiliza `/login` para autenticação e `/logout` para encerrar a sessão.
+
+Os avisos são cadastrados, consultados, atualizados e removidos através da API. A configuração do vídeo ativo é armazenada no SQLite; a imagem ativa é configurada em um arquivo JSON local.
+
+### 5. Totem vertical e atualização de conteúdo
+
+A interface do totem foi preparada para uma tela vertical com proporção 9:16. O navegador verifica a cada 10 segundos se houve alterações no vídeo, na imagem ou nos avisos, para atualizar o conteúdo sem intervenção manual na tela.
+
+### 6. Segurança e dados locais
+
+O painel administrativo usa sessão autenticada. O segredo da sessão e as credenciais administrativas devem ser fornecidos pelas variáveis de ambiente `SESSION_SECRET`, `ADMIN_USERNAME` e `ADMIN_PASSWORD`; o servidor não inicia se elas estiverem ausentes.
+
+O `.gitignore` exclui dependências instaladas, variáveis de ambiente, bancos de dados, mídias locais e arquivos de backup. Não coloque senhas, tokens, endereços internos ou outros dados privados no código ou no README.
+
+### 7. Ambiente de desenvolvimento
+
+O projeto pode ser desenvolvido e testado no GitHub Codespaces. Um fluxo comum de trabalho com Git é:
+
+```text
+Alteração no código
+        │
+        ▼
+Verificação e teste
+        │
+        ▼
+git status
+        │
+        ▼
+git add / git commit
+        │
+        ▼
+git push
+```
+
+Antes de cada commit, confira `git status` e revise os arquivos preparados para garantir que dados locais ou privados não serão incluídos.
+
+### Evolução e próximos passos
+
+A implementação atual integra reprodução de vídeo, avisos, gerenciamento de imagens, autenticação administrativa e consultas periódicas do conteúdo. Recursos como agendamento de conteúdo, gestão de usuários, monitoramento remoto, registro de eventos e suporte a múltiplos totens podem ser considerados em etapas futuras; não fazem parte do escopo implementado descrito acima.
+
+---
+
 ## 🎓 Aplicação educacional
 
 O projeto foi concebido para atender uma necessidade prática do ambiente escolar e também representa uma experiência de desenvolvimento de tecnologia aplicada à educação.
