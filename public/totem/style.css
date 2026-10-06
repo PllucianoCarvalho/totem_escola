@@ -70,4 +70,4 @@ body {
     overflow: hidden;
 
     background: black;
-}
+}html, body { cursor: none !important; }

@@ -1,0 +1,183 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <title>Acesso - Totem Escolar</title>
+
+    <style>
+        * {
+            box-sizing: border-box;
+        }
+
+        body {
+            margin: 0;
+            min-height: 100vh;
+
+            display: flex;
+            justify-content: center;
+            align-items: center;
+
+            font-family: Arial, sans-serif;
+            background: #f2f2f2;
+        }
+
+        .login {
+            width: 100%;
+            max-width: 360px;
+
+            background: white;
+            padding: 30px;
+
+            border-radius: 12px;
+
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
+        }
+
+        h1 {
+            margin-top: 0;
+            text-align: center;
+        }
+
+        label {
+            display: block;
+            margin-top: 15px;
+            margin-bottom: 5px;
+        }
+
+        input {
+            width: 100%;
+            padding: 12px;
+
+            border: 1px solid #ccc;
+            border-radius: 6px;
+
+            font-size: 16px;
+        }
+
+        button {
+            width: 100%;
+            margin-top: 20px;
+
+            padding: 12px;
+
+            border: none;
+            border-radius: 6px;
+
+            background: #222;
+            color: white;
+
+            font-size: 16px;
+            cursor: pointer;
+        }
+
+        button:hover {
+            background: #444;
+        }
+
+        #erro {
+            margin-top: 15px;
+            color: #c00;
+            text-align: center;
+        }
+    </style>
+</head>
+
+<body>
+
+    <main class="login">
+
+        <h1>Totem Escolar</h1>
+
+        <form id="loginForm">
+
+            <label for="usuario">
+                Usuário
+            </label>
+
+            <input
+                type="text"
+                id="usuario"
+                autocomplete="username"
+                required
+            >
+
+            <label for="senha">
+                Senha
+            </label>
+
+            <input
+                type="password"
+                id="senha"
+                autocomplete="current-password"
+                required
+            >
+
+            <button type="submit">
+                Entrar
+            </button>
+
+        </form>
+
+        <div id="erro"></div>
+
+    </main>
+
+    <script>
+
+        const form = document.getElementById("loginForm");
+        const erro = document.getElementById("erro");
+
+        form.addEventListener("submit", async (evento) => {
+
+            evento.preventDefault();
+
+            erro.textContent = "";
+
+            const usuario =
+                document.getElementById("usuario").value;
+
+            const senha =
+                document.getElementById("senha").value;
+
+            try {
+
+                const response = await fetch("/login", {
+                    method: "POST",
+
+                    headers: {
+                        "Content-Type": "application/json"
+                    },
+
+                    body: JSON.stringify({
+                        usuario,
+                        senha
+                    })
+                });
+
+                const resultado = await response.json();
+
+                if (!response.ok) {
+                    throw new Error(
+                        resultado.erro ||
+                        "Erro ao realizar login."
+                    );
+                }
+
+                window.location.href = "/amostradinho";
+
+            } catch (erroLogin) {
+
+                erro.textContent = erroLogin.message;
+
+            }
+
+        });
+
+    </script>
+
+</body>
+
+</html>

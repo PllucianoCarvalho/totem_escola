@@ -1,8 +1,14 @@
 const video = document.getElementById("video");
+const imagem = document.getElementById("imagem");
 const aviso = document.getElementById("aviso");
 
 let videoAtual = null;
 let avisosAtuais = [];
+
+let configuracaoImagem = {
+    imagem: null,
+    duracao: 10
+};
 
 
 async function verificarVideo() {
@@ -35,6 +41,9 @@ async function verificarVideo() {
         video.src = novoVideo;
         video.load();
 
+        imagem.style.display = "none";
+        video.style.display = "block";
+
         try {
             await video.play();
         } catch (erro) {
@@ -46,6 +55,70 @@ async function verificarVideo() {
         console.error("Erro ao consultar vídeo:", erro);
     }
 }
+
+
+async function verificarImagem() {
+
+    try {
+
+        const response = await fetch("/api/imagem");
+
+        if (!response.ok) {
+            throw new Error("Erro ao consultar imagem.");
+        }
+
+        const data = await response.json();
+
+        configuracaoImagem = {
+            imagem: data.imagem || null,
+            duracao: Number(data.duracao) || 10
+        };
+
+        console.log("Configuração da imagem:", configuracaoImagem);
+
+    } catch (erro) {
+
+        console.error("Erro ao consultar imagem:", erro);
+    }
+}
+
+
+video.addEventListener("ended", async () => {
+
+    if (!configuracaoImagem.imagem) {
+
+        video.currentTime = 0;
+        video.play();
+
+        return;
+    }
+
+    console.log("Vídeo terminou. Exibindo imagem.");
+
+    video.style.display = "none";
+    imagem.style.display = "block";
+
+    imagem.src =
+        `/imagens/${encodeURIComponent(configuracaoImagem.imagem)}`;
+
+    await new Promise(resolve => {
+        setTimeout(resolve, configuracaoImagem.duracao * 1000);
+    });
+
+    console.log("Tempo da imagem terminou. Voltando para o vídeo.");
+
+    imagem.style.display = "none";
+    video.style.display = "block";
+
+    video.currentTime = 0;
+
+    try {
+        await video.play();
+    } catch (erro) {
+        console.log("Autoplay aguardando interação.");
+    }
+
+});
 
 
 async function verificarAvisos() {
@@ -103,7 +176,9 @@ function atualizarAviso() {
 
 
 verificarVideo();
+verificarImagem();
 verificarAvisos();
 
-setInterval(verificarVideo, 1 * 60 * 1000);
+setInterval(verificarVideo, 10 * 1000);
+setInterval(verificarImagem, 10 * 1000);
 setInterval(verificarAvisos, 10 * 1000);

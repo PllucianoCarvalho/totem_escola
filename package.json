@@ -19,8 +19,12 @@
   },
   "homepage": "https://github.com/PllucianoCarvalho/totem_escola#readme",
   "dependencies": {
-    "better-sqlite3": "^13.0.3",
+    "better-sqlite3": "^11.10.0",
     "express": "^5.2.1",
+    "express-session": "^1.19.0",
     "multer": "^2.4.0"
+  },
+  "allowScripts": {
+    "better-sqlite3@11.10.0": true
   }
 }
