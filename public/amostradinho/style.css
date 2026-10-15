@@ -6,34 +6,20 @@
     --azul-pr: #12355A;
     --azul-destaque: #0067B0;
     --verde-pr: #008A3B;
-
     --fundo: #f4f7f8;
     --branco: #ffffff;
     --texto: #24313a;
     --texto-suave: #66737d;
     --borda: #dce3e7;
-
     --vermelho: #c62828;
 }
 
 body {
     margin: 0;
-
     font-family: Arial, sans-serif;
-
-    background:
-        linear-gradient(
-            135deg,
-            var(--fundo) 0%,
-            #ffffff 100%
-        );
-
+    background: linear-gradient(135deg, var(--fundo) 0%, #ffffff 100%);
     color: var(--texto);
 }
-
-/* =========================
-   CABEÇALHO
-   ========================= */
 
 .painel {
     max-width: 1000px;
@@ -44,64 +30,41 @@ body {
 .painel h1 {
     margin: 0 -25px 35px;
     padding: 25px 30px;
-
     background: var(--azul-pr);
     color: white;
-
     font-size: 28px;
     font-weight: 700;
-
     border-radius: 0 0 14px 14px;
-
     border-bottom: 5px solid var(--verde-pr);
-
     box-shadow: 0 4px 12px rgba(18, 53, 90, 0.18);
 }
 
-/* =========================
-   SEÇÕES
-   ========================= */
-
 section {
     margin-top: 25px;
-
     padding: 25px;
-
     background: var(--branco);
-
     border: 1px solid var(--borda);
     border-radius: 14px;
-
     box-shadow: 0 3px 12px rgba(0, 0, 0, 0.06);
 }
 
 section h2 {
     margin-top: 0;
     margin-bottom: 22px;
-
     color: var(--azul-pr);
-
     font-size: 21px;
 }
 
 section h3 {
     margin-top: 25px;
-
     color: var(--azul-destaque);
-
     font-size: 17px;
 }
 
-/* =========================
-   CAMPOS
-   ========================= */
-
 label {
     display: block;
-
     margin-top: 12px;
     margin-bottom: 6px;
-
     font-weight: 600;
     color: var(--azul-pr);
 }
@@ -109,37 +72,23 @@ label {
 input,
 textarea {
     display: block;
-
     width: 100%;
     max-width: 650px;
-
     margin: 0 0 18px;
-
     padding: 12px 14px;
-
     font-size: 15px;
     font-family: inherit;
-
     color: var(--texto);
-
     background: white;
-
     border: 1px solid var(--borda);
     border-radius: 8px;
-
-    transition:
-        border-color 0.2s,
-        box-shadow 0.2s;
 }
 
 input:focus,
 textarea:focus {
     outline: none;
-
     border-color: var(--azul-destaque);
-
-    box-shadow:
-        0 0 0 3px rgba(0, 103, 176, 0.12);
+    box-shadow: 0 0 0 3px rgba(0, 103, 176, 0.12);
 }
 
 textarea {
@@ -147,59 +96,32 @@ textarea {
     resize: vertical;
 }
 
-/* =========================
-   BOTÕES
-   ========================= */
-
 button {
     padding: 11px 18px;
-
     border: 0;
     border-radius: 8px;
-
     cursor: pointer;
-
     font-size: 15px;
     font-weight: 600;
-
     background: var(--azul-destaque);
     color: white;
-
-    transition:
-        transform 0.15s,
-        opacity 0.15s,
-        background 0.15s;
 }
 
 button:hover {
     opacity: 0.9;
-    transform: translateY(-1px);
 }
 
-button:active {
-    transform: translateY(0);
-}
-
-/* =========================
-   VÍDEOS
-   ========================= */
-
-.video-item {
+.video-item,
+.aviso-item {
     display: flex;
-
-    align-items: center;
+    align-items: flex-start;
     justify-content: space-between;
-
     gap: 15px;
-
     padding: 16px;
     margin-bottom: 10px;
-
     background: #f8fafb;
-
     border: 1px solid var(--borda);
     border-left: 5px solid var(--azul-destaque);
-
     border-radius: 9px;
 }
 
@@ -209,70 +131,51 @@ button:active {
 
 .ativo {
     margin-left: auto;
-
     padding: 6px 11px;
-
     background: var(--verde-pr);
     color: white;
-
     border-radius: 20px;
-
     font-size: 13px;
     font-weight: bold;
 }
 
-.botoes-video {
+.botoes-video,
+.botoes-aviso {
     display: flex;
     gap: 8px;
     flex-wrap: wrap;
 }
 
-.botoes-video button:last-child {
+.botoes-video button:last-child,
+.botoes-aviso button:last-child,
+.item-imagem button {
     background: var(--vermelho);
-}
-
-/* =========================
-   IMAGEM PUBLICADA
-   ========================= */
-
-#listaImagem {
-    margin-top: 15px;
 }
 
 .item-imagem {
     display: flex;
-
     flex-wrap: wrap;
     align-items: center;
-
     gap: 20px;
-
     padding: 20px;
-
+    margin-bottom: 12px;
     background: #f8fafb;
-
     border: 1px solid var(--borda);
     border-left: 5px solid var(--verde-pr);
-
     border-radius: 10px;
 }
 
 .item-imagem img {
     width: 150px;
     height: 150px;
-
     object-fit: contain;
-
     background: #eef2f4;
-
     border-radius: 8px;
-
     border: 1px solid var(--borda);
 }
 
 .item-imagem p {
     margin: 5px 0;
-
     color: var(--texto-suave);
 }
 
@@ -280,70 +183,25 @@ button:active {
     color: var(--azul-pr);
 }
 
-.item-imagem button {
-    background: var(--vermelho);
-}
-
-/* =========================
-   AVISOS
-   ========================= */
-
-.aviso-item {
-    display: flex;
-
-    align-items: flex-start;
-    justify-content: space-between;
-
-    gap: 15px;
-
-    padding: 16px;
-    margin-bottom: 10px;
-
-    background: #f8fafb;
-
-    border: 1px solid var(--borda);
-    border-left: 5px solid var(--azul-destaque);
-
-    border-radius: 9px;
-}
-
 .aviso-item small {
     line-height: 1.8;
     color: var(--texto-suave);
 }
 
-.botoes-aviso {
-    display: flex;
-    gap: 8px;
-    flex-wrap: wrap;
+#listaImagem {
+    margin-top: 15px;
 }
-
-.botoes-aviso button:last-child {
-    background: var(--vermelho);
-}
-
-/* =========================
-   STATUS
-   ========================= */
 
 #statusVideo,
 #statusImagem,
 #statusAviso {
     margin-top: 15px;
-
     min-height: 20px;
-
     color: var(--verde-pr);
-
     font-weight: 600;
 }
 
-/* =========================
-   RESPONSIVO
-   ========================= */
-
 @media (max-width: 700px) {
-
     .painel {
         margin: 0 auto;
         padding: 0 12px 30px;
@@ -352,7 +210,6 @@ button:active {
     .painel h1 {
         margin-left: -12px;
         margin-right: -12px;
-
         border-radius: 0;
     }
 
