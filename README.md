@@ -8,72 +8,109 @@ Sistema web para exibição de vídeos, sequência de imagens e avisos escolares
 - Sequência de várias imagens após o vídeo, cada uma com duração própria.
 - Gerenciamento individual de imagens publicadas.
 - Cadastro, edição e exclusão de avisos com período de exibição.
-- Painel protegido por sessão.
+- Painel administrativo protegido por sessão.
+- Rotas de alteração da API protegidas por autenticação.
 - Armazenamento local de mídias e SQLite.
 
-## Tecnologias
+## Requisitos
 
-- Node.js 20+
-- Express 5
-- SQLite com better-sqlite3
-- express-session
-- Multer
-- HTML, CSS e JavaScript
+- Linux Mint, Ubuntu ou outra distribuição Linux compatível.
+- Node.js 20.6 ou superior e npm.
+- Git para clonar o repositório.
 
-## Como funciona
+Confira as versões instaladas:
 
-O servidor armazena os vídeos em `dados/videos/`, as imagens em `dados/imagens/`, as configurações de vídeo e avisos no SQLite e a lista de imagens em `dados/imagem.json`. Esses dados são locais à instalação e não devem ser versionados.
-
-Após o vídeo terminar, o Totem apresenta cada imagem cadastrada na ordem atual da lista, respeitando a duração de cada item, e então reinicia o vídeo.
+```bash
+node --version
+npm --version
+```
 
 ## Instalação
 
-Requer Node.js 20 ou superior.
+No terminal do computador que será o servidor, execute:
 
 ```bash
-npm install
+git clone https://github.com/PllucianoCarvalho/totem_escola.git
+cd totem_escola
+npm ci
 cp .env.example .env
 ```
 
-Edite o arquivo `.env` no servidor com valores próprios. Gere o segredo de sessão usando:
+Crie um segredo de sessão:
 
 ```bash
 openssl rand -hex 32
 ```
 
-Defina estas variáveis no ambiente de execução:
+Abra o arquivo de configuração:
 
-- `SESSION_SECRET`
-- `ADMIN_USERNAME`
-- `ADMIN_PASSWORD`
-- `PORT` (opcional; padrão `3000`)
+```bash
+nano .env
+```
 
-O arquivo `.env` é ignorado pelo Git. Não publique credenciais reais.
+Preencha as variáveis. Cole o resultado do comando `openssl` em `SESSION_SECRET` e defina usuário e senha fortes para o painel:
 
-Inicie o sistema:
+```dotenv
+SESSION_SECRET=cole_aqui_o_segredo_gerado
+ADMIN_USERNAME=seu_usuario
+ADMIN_PASSWORD=sua_senha_forte
+PORT=3000
+```
+
+Não deixe os campos obrigatórios vazios e não publique o arquivo `.env`. Ele contém credenciais locais e é ignorado pelo Git. O comando `npm start` carrega esse arquivo automaticamente por meio do recurso nativo do Node.js.
+
+Inicie o servidor:
 
 ```bash
 npm start
 ```
 
-O painel é acessado em `/amostradinho`; a tela do Totem em `/totem`. Use o endereço IP do servidor na rede local.
+Mantenha o terminal aberto enquanto o sistema estiver em execução. Para encerrar o servidor, pressione `Ctrl+C`.
+
+## Acesso pela rede local
+
+Descubra o IP do servidor com:
+
+```bash
+hostname -I
+```
+
+Em outro computador da mesma rede, substitua `IP_DO_SERVIDOR` pelo endereço exibido:
+
+- Login: `http://IP_DO_SERVIDOR:3000/login`
+- Painel administrativo: `http://IP_DO_SERVIDOR:3000/amostradinho`
+- Tela do Totem: `http://IP_DO_SERVIDOR:3000/totem`
+
+Após entrar no painel, envie um vídeo em formato MP4 e clique em **Ativar**. A instalação começa sem vídeo ativo e sem avisos ou imagens cadastrados; esses dados são adicionados pelo painel.
+
+## Resolução de problemas
+
+- **Variáveis de ambiente ausentes:** confira se o arquivo `.env` existe e se `SESSION_SECRET`, `ADMIN_USERNAME` e `ADMIN_PASSWORD` estão preenchidos.
+- **Falha ao instalar `better-sqlite3` no Linux:** se o erro indicar ferramentas de compilação ausentes, instale-as com `sudo apt install build-essential python3 make g++` e execute `npm ci` novamente.
+- **Acesso a partir de outro computador:** confirme que ambos estão na rede local e que a porta TCP 3000 não está bloqueada pelo firewall.
+
+Se o servidor for configurado futuramente para iniciar pelo systemd executando `server.js` diretamente, a unidade também precisará carregar o arquivo `.env` (por exemplo, com `EnvironmentFile=`) ou usar a opção `--env-file` do Node.js. O comando documentado aqui é `npm start`.
 
 ## API principal
+
+As rotas de leitura usadas pela tela do Totem permanecem disponíveis sem login. As operações que alteram dados exigem sessão autenticada.
 
 | Método | Endpoint | Descrição |
 |---|---|---|
 | GET | `/api/status` | Estado do servidor e banco |
 | GET | `/api/videos` | Lista vídeos e vídeo ativo |
-| POST | `/api/video` | Envia vídeo |
-| POST | `/api/video/ativar` | Define o vídeo ativo |
-| DELETE | `/api/videos/:video` | Exclui vídeo não ativo |
+| POST | `/api/video` | Envia um vídeo MP4 (login necessário) |
+| POST | `/api/video/ativar` | Define o vídeo ativo (login necessário) |
+| DELETE | `/api/videos/:video` | Exclui vídeo não ativo (login necessário) |
 | GET | `/api/video` | Consulta vídeo ativo |
-| GET/POST | `/api/imagem` | Consulta a lista / adiciona imagem |
-| DELETE | `/api/imagem/:id` | Exclui uma imagem da lista |
-| GET/POST/PUT/DELETE | `/api/avisos` e `/api/avisos/:id` | Gerencia avisos |
+| GET/POST | `/api/imagem` | Consulta a lista / adiciona imagem (POST exige login) |
+| DELETE | `/api/imagem/:id` | Exclui uma imagem (login necessário) |
+| GET/POST/PUT/DELETE | `/api/avisos` e `/api/avisos/:id` | Consulta e gerencia avisos; alterações exigem login |
 
 ## Dados locais e versionamento
 
+O banco SQLite é criado automaticamente em `dados/totem.db`. Vídeos, imagens e configurações locais também são gravados na pasta `dados/`; esses dados não precisam estar no GitHub e não devem ser versionados.
+
 O `.gitignore` exclui dependências instaladas, uploads, bancos de dados, configurações locais e backups. Versione o código e os arquivos de exemplo, não os dados reais da escola.
 
-**Importante:** arquivos de mídia, bancos e dependências que tenham sido adicionados a commits antigos continuam no histórico do GitHub, mesmo quando são removidos de uma versão mais recente. Para eliminá-los também do histórico público é necessário reescrever o histórico e verificar novamente se algum segredo foi publicado.
+**Importante:** arquivos de mídia, bancos e dependências que tenham sido adicionados a commits antigos continuam no histórico do GitHub, mesmo quando removidos das versões mais recentes. Para eliminá-los do histórico é necessário reescrevê-lo e verificar novamente se algum segredo foi publicado.

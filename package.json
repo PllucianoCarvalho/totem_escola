@@ -4,7 +4,7 @@
   "description": "Site para totem de reprodução de vídeos informativos e avisos escolares",
   "main": "server.js",
   "scripts": {
-    "start": "node server.js"
+    "start": "node --env-file=.env server.js"
   },
   "keywords": [],
   "author": "",

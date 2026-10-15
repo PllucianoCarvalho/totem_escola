@@ -1,0 +1,74 @@
+name: Validar instalação
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+permissions:
+  contents: read
+
+jobs:
+  install-smoke-test:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Baixar código
+        uses: actions/checkout@v4
+
+      - name: Configurar Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      - name: Instalar dependências de forma limpa
+        run: npm ci
+
+      - name: Testar inicialização, login e API
+        shell: bash
+        run: |
+          set -euo pipefail
+          printf 'SESSION_SECRET=%s\nADMIN_USERNAME=ci-admin\nADMIN_PASSWORD=ci-password\nPORT=3100\n' "$(openssl rand -hex 32)" > .env
+          npm start > server.log 2>&1 &
+          server_pid=$!
+          trap 'kill "$server_pid" 2>/dev/null || true' EXIT
+
+          ready=0
+          for i in $(seq 1 30); do
+            if curl --fail --silent http://127.0.0.1:3100/api/status >/dev/null; then
+              ready=1
+              break
+            fi
+            sleep 1
+          done
+          if [ "$ready" -ne 1 ]; then
+            cat server.log
+            exit 1
+          fi
+
+          curl --fail --silent http://127.0.0.1:3100/login >/dev/null
+          curl --fail --silent http://127.0.0.1:3100/totem >/dev/null
+
+          unauth_status=$(curl --silent --output /dev/null --write-out '%{http_code}' \
+            -X POST http://127.0.0.1:3100/api/avisos \
+            -H 'Content-Type: application/json' \
+            -d '{"mensagem":"teste","inicio":"2026-01-01T00:00:00","fim":"2026-01-01T01:00:00"}')
+          test "$unauth_status" = "401"
+
+          curl --fail --silent --cookie-jar cookies.txt \
+            -H 'Content-Type: application/json' \
+            -d '{"usuario":"ci-admin","senha":"ci-password"}' \
+            http://127.0.0.1:3100/login | grep -q '"sucesso":true'
+
+          printf 'arquivo de teste' > /tmp/test-video.mp4
+          curl --fail --silent --cookie cookies.txt \
+            -F 'video=@/tmp/test-video.mp4;type=video/mp4' \
+            http://127.0.0.1:3100/api/video | grep -q '"sucesso":true'
+
+          curl --fail --silent --cookie cookies.txt \
+            -H 'Content-Type: application/json' \
+            -d '{"video":"test-video.mp4"}' \
+            http://127.0.0.1:3100/api/video/ativar | grep -q '"sucesso":true'
+
+          curl --fail --silent http://127.0.0.1:3100/api/video | grep -q '"video":"test-video.mp4"'

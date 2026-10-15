@@ -48,6 +48,13 @@ function protegerAmostradinho(req, res, next) {
     next();
 }
 
+function protegerApi(req, res, next) {
+    if (!req.session.autenticado) {
+        return res.status(401).json({ erro: "Faça login para realizar esta operação." });
+    }
+    next();
+}
+
 app.get("/logout", (req, res) => {
     req.session.destroy(() => res.redirect("/login"));
 });
@@ -117,7 +124,7 @@ app.get("/api/videos", (req, res) => {
     res.json({ videos: arquivos, ativo: config.video });
 });
 
-app.delete("/api/videos/:video", (req, res) => {
+app.delete("/api/videos/:video", protegerApi, (req, res) => {
     const video = req.params.video;
     const config = db.prepare("SELECT video FROM configuracoes WHERE id = 1").get();
 
@@ -134,7 +141,20 @@ app.delete("/api/videos/:video", (req, res) => {
     res.json({ sucesso: true, video });
 });
 
-app.post("/api/video/ativar", (req, res) => {
+app.post("/api/video", protegerApi, upload.single("video"), (req, res) => {
+    if (!req.file) {
+        return res.status(400).json({ erro: "Nenhum vídeo foi enviado." });
+    }
+
+    if (path.extname(req.file.originalname).toLowerCase() !== ".mp4") {
+        fs.unlinkSync(req.file.path);
+        return res.status(400).json({ erro: "Envie um arquivo MP4." });
+    }
+
+    res.json({ sucesso: true, video: req.file.filename });
+});
+
+app.post("/api/video/ativar", protegerApi, (req, res) => {
     const { video } = req.body;
     if (!video) return res.status(400).json({ erro: "Nenhum vídeo informado." });
 
@@ -157,7 +177,7 @@ app.get("/api/avisos", (req, res) => {
     res.json({ avisos });
 });
 
-app.post("/api/avisos", (req, res) => {
+app.post("/api/avisos", protegerApi, (req, res) => {
     const { mensagem, inicio, fim } = req.body;
     if (!mensagem || !inicio || !fim) {
         return res.status(400).json({ erro: "Mensagem, início e fim são obrigatórios." });
@@ -173,7 +193,7 @@ app.post("/api/avisos", (req, res) => {
     res.json({ sucesso: true, id: resultado.lastInsertRowid });
 });
 
-app.put("/api/avisos/:id", (req, res) => {
+app.put("/api/avisos/:id", protegerApi, (req, res) => {
     const id = Number(req.params.id);
     const { mensagem, inicio, fim } = req.body;
     if (!mensagem || !inicio || !fim) {
@@ -193,7 +213,7 @@ app.put("/api/avisos/:id", (req, res) => {
     res.json({ sucesso: true, id });
 });
 
-app.delete("/api/avisos/:id", (req, res) => {
+app.delete("/api/avisos/:id", protegerApi, (req, res) => {
     const id = Number(req.params.id);
     const resultado = db.prepare("DELETE FROM avisos WHERE id = ?").run(id);
     if (resultado.changes === 0) return res.status(404).json({ erro: "Aviso não encontrado." });
@@ -231,7 +251,7 @@ app.get("/api/imagem", (req, res) => {
     }
 });
 
-app.post("/api/imagem", uploadImagem.single("imagem"), (req, res) => {
+app.post("/api/imagem", protegerApi, uploadImagem.single("imagem"), (req, res) => {
     if (!req.file) return res.status(400).json({ erro: "Nenhuma imagem foi enviada." });
 
     const duracao = Number(req.body.duracao);
@@ -258,7 +278,7 @@ app.post("/api/imagem", uploadImagem.single("imagem"), (req, res) => {
     }
 });
 
-app.delete("/api/imagem/:id", (req, res) => {
+app.delete("/api/imagem/:id", protegerApi, (req, res) => {
     const id = Number(req.params.id);
 
     try {
@@ -286,7 +306,10 @@ app.use((err, req, res, next) => {
     console.error("ERRO NO SERVIDOR:", err);
     if (err instanceof multer.MulterError) {
         if (err.code === "LIMIT_FILE_SIZE") {
-            return res.status(413).json({ erro: "O vídeo é maior que o limite permitido de 500 MB." });
+            const mensagem = err.field === "imagem"
+                ? "A imagem excede o limite permitido de 10 MB."
+                : "O vídeo é maior que o limite permitido de 500 MB.";
+            return res.status(413).json({ erro: mensagem });
         }
         return res.status(400).json({ erro: `Erro no upload: ${err.message}` });
     }
