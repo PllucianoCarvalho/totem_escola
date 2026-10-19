@@ -7,8 +7,8 @@ const atualizacao=document.getElementById("atualizacao");
 let professores=[];
 let aulasGrade=[];
 const horariosAula=[
- {inicio:"07:50",fim:"08:40",numero:1},{inicio:"08:40",fim:"09:30",numero:2},{inicio:"09:40",fim:"10:30",numero:3},{inicio:"10:30",fim:"11:20",numero:4},{inicio:"11:20",fim:"12:10",numero:5},
- {inicio:"13:05",fim:"13:55",numero:1},{inicio:"13:55",fim:"14:45",numero:2},{inicio:"14:55",fim:"15:45",numero:3},{inicio:"15:45",fim:"16:35",numero:4},{inicio:"16:35",fim:"17:25",numero:5}
+ {inicio:"07:00",fim:"07:50",numero:1},{inicio:"07:50",fim:"08:40",numero:2},{inicio:"08:40",fim:"09:30",numero:3},{inicio:"09:40",fim:"10:30",numero:4},{inicio:"10:30",fim:"11:20",numero:5},{inicio:"11:20",fim:"12:10",numero:6},
+ {inicio:"12:15",fim:"13:05",numero:1},{inicio:"13:05",fim:"13:55",numero:2},{inicio:"13:55",fim:"14:45",numero:3},{inicio:"14:55",fim:"15:45",numero:4},{inicio:"15:45",fim:"16:35",numero:5},{inicio:"16:35",fim:"17:25",numero:6}
 ];
 const diasNomes=["domingo","segunda-feira","terça-feira","quarta-feira","quinta-feira","sexta-feira","sábado"];
 function minutos(h){const [a,b]=h.split(":").map(Number);return a*60+b;}
