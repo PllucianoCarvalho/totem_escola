@@ -1,7 +1,26 @@
 <!DOCTYPE html>
 <html lang="pt-BR">
 <head>
-<meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Horários dos professores</title><link rel="stylesheet" href="/horarios/style.css">
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="theme-color" content="#10131b">
+<title>Ensalamento — Totem Escolar</title>
+<link rel="stylesheet" href="/horarios/style.css">
 </head>
-<body><main><header><p>COLÉGIO</p><h1>Horários dos professores</h1><div id="dataAtual"></div></header><section id="lista"><p>Carregando horários...</p></section><footer>Informações escolares · Totem Escolar</footer></main><script src="/horarios/script.js"></script></body>
+<body>
+<main class="painel">
+  <header class="topo">
+    <div><div id="relogio" class="relogio">--:--</div><div id="diaSemana" class="dia">Carregando dia...</div></div>
+    <div class="situacao"><strong id="aulaAtual">Consultando horário...</strong><span id="quantidade">Carregando professores...</span></div>
+  </header>
+  <section class="controles">
+    <input id="busca" type="search" placeholder="Buscar professor, turma ou disciplina..." aria-label="Buscar professor, turma ou disciplina">
+    <button id="modoProfessor" class="modo ativo" type="button">Por professor</button>
+    <button id="modoTurma" class="modo" type="button">Por turma</button>
+  </section>
+  <section id="lista" class="grade" aria-live="polite"><p class="vazio">Carregando horários...</p></section>
+  <div id="atualizacao" class="atualizacao">Atualizando horários automaticamente.</div>
+</main>
+<script src="/horarios/script.js"></script>
+</body>
 </html>
