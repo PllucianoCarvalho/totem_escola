@@ -3,12 +3,8 @@ const relogio=document.getElementById("relogio");
 const diaSemana=document.getElementById("diaSemana");
 const aulaAtual=document.getElementById("aulaAtual");
 const quantidade=document.getElementById("quantidade");
-const busca=document.getElementById("busca");
-const modoProfessor=document.getElementById("modoProfessor");
-const modoTurma=document.getElementById("modoTurma");
 const atualizacao=document.getElementById("atualizacao");
 let professores=[];
-let modo="professor";
 const aulas=[
  {periodo:"manhã",inicio:"07:50",fim:"08:40",numero:1},
  {periodo:"manhã",inicio:"08:40",fim:"09:30",numero:2},
@@ -32,7 +28,7 @@ function atualizarCabecalho(){
  else{aulaAtual.textContent="Fora do horário de aula";}
  const periodo=aula?.periodo;
  const emAula=professores.filter(p=>{const h=(p.horario||"").toLowerCase();return !h||!periodo||h.includes(periodo)||h.includes(aula.inicio);});
- quantidade.textContent=aula?professores.length+" professor(es) cadastrado(s)":"Grade escolar";
+ quantidade.textContent=aula?"Aguardando grade validada":"Grade escolar";
 }
 function montarCartao(nome,etiqueta){
  const card=document.createElement("article");card.className="cartao";
@@ -41,26 +37,17 @@ function montarCartao(nome,etiqueta){
  card.append(titulo,tag);return card;
 }
 function renderizar(){
- const termo=busca.value.trim().toLocaleLowerCase("pt-BR");
  lista.innerHTML="";
- let itens=[];
- if(modo==="professor"){
-   itens=professores.map(p=>({nome:p.professor,etiqueta:[p.turma,p.componente].filter(Boolean).join(" · "),busca:[p.professor,p.turma,p.componente,p.sala,p.horario].join(" ")}));
- }else{
-   const grupos=new Map();
-   professores.forEach(p=>{const turma=(p.turma||"Turma não informada").trim();if(!grupos.has(turma))grupos.set(turma,[]);grupos.get(turma).push(p);});
-   itens=[...grupos.entries()].map(([turma,ps])=>({nome:turma,etiqueta:ps.map(p=>[p.professor,p.componente].filter(Boolean).join(" · ")).filter(Boolean).join("  |  "),busca:[turma,...ps.flatMap(p=>[p.professor,p.componente])].join(" ")}));
+ if(!professores.length){
+  const p=document.createElement("p");p.className="vazio";
+  p.textContent="Os horários ainda estão sendo organizados a partir dos relatórios oficiais.";
+  lista.appendChild(p);return;
  }
- itens=itens.filter(i=>!termo||i.busca.toLocaleLowerCase("pt-BR").includes(termo));
- if(!itens.length){const p=document.createElement("p");p.className="vazio";p.textContent=professores.length?"Nenhum resultado para essa busca.":"Os horários ainda não foram publicados.";lista.appendChild(p);return;}
- itens.forEach(i=>lista.appendChild(montarCartao(i.nome,i.etiqueta)));
+ professores.forEach(p=>lista.appendChild(montarCartao(p.professor,[p.componente,p.turma].filter(Boolean).join(" · "))));
 }
 async function carregar(){
  try{const r=await fetch("/api/horarios",{cache:"no-store"});if(!r.ok)throw new Error();const d=await r.json();professores=Array.isArray(d.professores)?d.professores:[];renderizar();atualizacao.textContent="Atualizado às "+new Date().toLocaleTimeString("pt-BR",{hour:"2-digit",minute:"2-digit"});}
  catch{lista.innerHTML='<p class="vazio">Não foi possível carregar os horários.</p>';atualizacao.textContent="Falha ao atualizar os dados.";}
 }
-modoProfessor.addEventListener("click",()=>{modo="professor";modoProfessor.classList.add("ativo");modoTurma.classList.remove("ativo");renderizar();});
-modoTurma.addEventListener("click",()=>{modo="turma";modoTurma.classList.add("ativo");modoProfessor.classList.remove("ativo");renderizar();});
-busca.addEventListener("input",renderizar);
 atualizarCabecalho();carregar();
 setInterval(()=>{atualizarCabecalho();carregar();},60000);
