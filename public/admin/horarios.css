@@ -10,3 +10,9 @@
 .tabela-consulta td{font-size:14px}
 @media(max-width:800px){.filtros-grade{grid-template-columns:repeat(2,minmax(0,1fr))}}
 @media(max-width:480px){.filtros-grade{grid-template-columns:1fr}.filtros-grade button{width:100%}}
+
+.atalhos-horarios{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap}
+.atalho-consulta{display:inline-flex;align-items:center;gap:7px;padding:11px 16px;border-radius:9px;background:#1146f0;color:#fff;text-decoration:none;font-weight:700}
+.atalho-consulta:hover{filter:brightness(.94)}
+#consultaGrade{scroll-margin-top:18px}
+@media(max-width:480px){.atalhos-horarios{align-items:stretch;flex-direction:column}.atalho-consulta{justify-content:center;text-align:center}}
