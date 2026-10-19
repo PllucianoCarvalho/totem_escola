@@ -46,8 +46,26 @@
       <button id="salvarHorarios" type="button">Publicar horários revisados</button>
       <p id="statusSalvar" role="status"></p>
     </section>
+    <section class="cartao" id="consultaGrade">
+      <h2>3. Consultar grade de aulas</h2>
+      <p>Filtre os horários publicados por professor, turma, componente curricular ou dia da semana. Os filtros podem ser combinados.</p>
+      <div class="filtros-grade">
+        <label>Professor <input id="filtroProfessor" type="search" placeholder="Nome do professor"></label>
+        <label>Turma <input id="filtroTurma" type="search" placeholder="Ex.: 2A, 9B"></label>
+        <label>Componente curricular <input id="filtroComponente" type="search" placeholder="Ex.: Física"></label>
+        <label>Dia da semana <select id="filtroDia"><option value="">Todos os dias</option></select></label>
+        <button id="limparFiltros" class="secundario" type="button">Limpar filtros</button>
+      </div>
+      <p id="resultadoFiltros" role="status">Carregando grade publicada...</p>
+      <div class="tabela-wrap">
+        <table class="tabela-consulta">
+          <thead><tr><th>Dia</th><th>Horário</th><th>Turma</th><th>Componente</th><th>Professor</th><th>Turno</th></tr></thead>
+          <tbody id="resultadosGrade"><tr><td colspan="6" class="vazio">Carregando horários...</td></tr></tbody>
+        </table>
+      </div>
+    </section>
     <section class="cartao">
-      <h2>Última versão publicada</h2>
+      <h2>4. Última versão publicada</h2>
       <p id="estadoAtual">Carregando...</p>
     </section>
   </main>
