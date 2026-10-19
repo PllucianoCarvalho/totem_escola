@@ -346,7 +346,7 @@ app.put("/api/horarios", protegerApi, (req, res) => {
         let fim = String(item.fim || "").trim();
         const horario = String(item.horario || "").trim();
         if ((!dia || !inicio || !fim) && horario) {
-            const m = horario.match(/^(segunda-feira|terça-feira|quarta-feira|quinta-feira|sexta-feira|sábado|domingo)\\s+(\\d{2}:\\d{2})\\s*[–-]\\s*(\\d{2}:\\d{2})$/i);
+            const m = horario.match(/^(segunda-feira|terça-feira|quarta-feira|quinta-feira|sexta-feira|sábado|domingo)\s+(\d{2}:\d{2})\s*[–-]\s*(\d{2}:\d{2})$/i);
             if (m) { dia = dia || m[1]; inicio = inicio || m[2]; fim = fim || m[3]; }
         }
         return {
