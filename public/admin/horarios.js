@@ -123,7 +123,7 @@ function converterRelatorioIndividual(resultado){
   const nomesDias={"Seg":"segunda-feira","Ter":"terça-feira","Qua":"quarta-feira","Qui":"quinta-feira","Sex":"sexta-feira"};
   const horarios=[["12:15","13:05"],["13:05","13:55"],["13:55","14:45"],["14:55","15:45"],["15:45","16:35"],["16:35","17:25"]];
   const aulas=[];
-  const turmaValida=/^(?:[6789][A-E]|[123][A-D])(?:\\s+II)?$/i;
+  const turmaValida=/^(?:[6789][A-E]|[123][A-D])(?:\s+II)?$/i;
   resultado.paginasItens.forEach((grupos,pagina)=>{
     const cabecalhos=[];
     grupos.forEach(g=>{
@@ -149,7 +149,7 @@ function converterRelatorioIndividual(resultado){
       if(candidatas.length){
         const yNome=Math.min(...candidatas.map(i=>i.y));
         const itensNome=candidatas.filter(i=>Math.abs(i.y-yNome)<=2).sort((a,b)=>a.x-b.x);
-        professor=itensNome.map(i=>i.texto).join(" ").replace(/\\s+/g," ").trim();
+        professor=itensNome.map(i=>i.texto).join(" ").replace(/\s+/g," ").trim();
       }
       if(!professor) return;
       linhasPeriodos.forEach(linha=>{
@@ -160,7 +160,7 @@ function converterRelatorioIndividual(resultado){
           const candidatos=linha.itens.filter(i=>i.x>=limiteEsq-2&&i.x<limiteDir&&Math.abs(i.x-col.x)<32&&i.texto!==itemPeriodo.texto);
           if(!candidatos.length)return;
           const celula=candidatos.sort((a,b)=>Math.abs(a.x-col.x)-Math.abs(b.x-col.x))[0];
-          const turma=celula.texto.replace(/\\s+/g," ").trim().toUpperCase();
+          const turma=celula.texto.replace(/\s+/g," ").trim().toUpperCase();
           if(!turmaValida.test(turma))return;
           const faixa=horarios[linha.numero-1];
           aulas.push({dia:col.dia,inicio:faixa[0],fim:faixa[1],turma,componente:"A confirmar",professor,turno:"tarde",origem:"individual",pagina:pagina+1,periodo:linha.numero});
@@ -215,7 +215,7 @@ document.getElementById("adicionarLinha").addEventListener("click",()=>{registro
 document.getElementById("salvarHorarios").addEventListener("click",async()=>{
   statusSalvar.textContent="Salvando...";
   try{
-    const prepararRegistro=r=>{const m=String(r.horario||"").match(/^(segunda-feira|terça-feira|quarta-feira|quinta-feira|sexta-feira|sábado|domingo)\\s+(\\d{2}:\\d{2})\\s*[–-]\\s*(\\d{2}:\\d{2})$/i);return {professor:r.professor,turma:r.turma,componente:r.componente,horario:r.horario,dia:m?m[1]:(r.dia||""),inicio:m?m[2]:(r.inicio||""),fim:m?m[3]:(r.fim||""),turno:(m?Number(m[2].slice(0,2)):Number(String(r.inicio||"00").slice(0,2)))<12?"manhã":"tarde",origem:r.origem||""};};
+    const prepararRegistro=r=>{const m=String(r.horario||"").match(/^(segunda-feira|terça-feira|quarta-feira|quinta-feira|sexta-feira|sábado|domingo)\s+(\d{2}:\d{2})\s*[–-]\s*(\d{2}:\d{2})$/i);return {professor:r.professor,turma:r.turma,componente:r.componente,horario:r.horario,dia:m?m[1]:(r.dia||""),inicio:m?m[2]:(r.inicio||""),fim:m?m[3]:(r.fim||""),turno:(m?Number(m[2].slice(0,2)):Number(String(r.inicio||"00").slice(0,2)))<12?"manhã":"tarde",origem:r.origem||""};};
     const registrosProntos=registros.map(prepararRegistro);
     const resposta=await fetch("/api/horarios",{method:"PUT",headers:{"Content-Type":"application/json"},body:JSON.stringify({professores:registrosProntos,aulas:registrosProntos,pdf:pdfSelecionado})});
     const dados=await resposta.json();if(!resposta.ok)throw new Error(dados.erro||"Falha ao salvar.");
