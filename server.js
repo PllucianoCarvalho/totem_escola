@@ -63,9 +63,13 @@ const dadosPath = path.join(__dirname, "dados");
 const videosPath = path.join(dadosPath, "videos");
 const imagensPath = path.join(dadosPath, "imagens");
 const caminhoConfigImagens = path.join(dadosPath, "imagem.json");
+const horariosPath = path.join(dadosPath, "horarios");
+const caminhoHorarios = path.join(dadosPath, "horarios.json");
+const caminhoPdfHorarios = path.join(horariosPath, "horarios-professores.pdf");
 
 fs.mkdirSync(videosPath, { recursive: true });
 fs.mkdirSync(imagensPath, { recursive: true });
+fs.mkdirSync(horariosPath, { recursive: true });
 
 const storageVideo = multer.diskStorage({
     destination: (req, file, cb) => cb(null, videosPath),
@@ -87,6 +91,33 @@ const storageImagem = multer.diskStorage({
         cb(null, `${nome}${path.extname(file.originalname)}`);
     }
 });
+
+const storagePdfHorarios = multer.diskStorage({
+    destination: (req, file, cb) => cb(null, horariosPath),
+    filename: (req, file, cb) => cb(null, "horarios-professores.pdf")
+});
+
+const uploadPdfHorarios = multer({
+    storage: storagePdfHorarios,
+    limits: { fileSize: 25 * 1024 * 1024 },
+    fileFilter: (req, file, cb) => {
+        const extensao = path.extname(file.originalname).toLowerCase();
+        if (extensao !== ".pdf" || (file.mimetype !== "application/pdf" && file.mimetype !== "application/octet-stream")) {
+            return cb(new Error("Envie um arquivo PDF válido."));
+        }
+        cb(null, true);
+    }
+});
+
+function lerHorarios() {
+    if (!fs.existsSync(caminhoHorarios)) return { pdf: null, atualizadoEm: null, professores: [] };
+    const dados = JSON.parse(fs.readFileSync(caminhoHorarios, "utf8"));
+    return {
+        pdf: dados.pdf || null,
+        atualizadoEm: dados.atualizadoEm || null,
+        professores: Array.isArray(dados.professores) ? dados.professores : []
+    };
+}
 
 const uploadImagem = multer({
     storage: storageImagem,
@@ -218,6 +249,52 @@ app.delete("/api/avisos/:id", protegerApi, (req, res) => {
     const resultado = db.prepare("DELETE FROM avisos WHERE id = ?").run(id);
     if (resultado.changes === 0) return res.status(404).json({ erro: "Aviso não encontrado." });
     res.json({ sucesso: true });
+});
+
+app.get("/horarios", (req, res) => {
+    res.sendFile(path.join(__dirname, "public", "horarios", "index.html"));
+});
+
+app.get("/api/horarios", (req, res) => {
+    try {
+        res.json(lerHorarios());
+    } catch (error) {
+        console.error("Erro ao ler horários:", error);
+        res.status(500).json({ erro: "Não foi possível carregar os horários." });
+    }
+});
+
+app.post("/api/horarios/pdf", protegerApi, uploadPdfHorarios.single("pdf"), (req, res) => {
+    if (!req.file) return res.status(400).json({ erro: "Selecione um arquivo PDF." });
+    res.json({ sucesso: true, arquivo: req.file.filename });
+});
+
+app.put("/api/horarios", protegerApi, (req, res) => {
+    const { professores } = req.body;
+    if (!Array.isArray(professores)) {
+        return res.status(400).json({ erro: "A lista de horários é inválida." });
+    }
+
+    const normalizados = professores.map((item) => ({
+        professor: String(item.professor || "").trim(),
+        sala: String(item.sala || "").trim(),
+        turma: String(item.turma || "").trim(),
+        componente: String(item.componente || "").trim(),
+        horario: String(item.horario || "").trim()
+    }));
+
+    if (normalizados.some(item => !item.professor || !item.turma || !item.componente)) {
+        return res.status(400).json({ erro: "Preencha professor, turma e componente em todas as linhas." });
+    }
+
+    const dados = {
+        pdf: fs.existsSync(caminhoPdfHorarios) ? "horarios-professores.pdf" : null,
+        atualizadoEm: new Date().toISOString(),
+        professores: normalizados
+    };
+
+    fs.writeFileSync(caminhoHorarios, JSON.stringify(dados, null, 2), "utf8");
+    res.json({ sucesso: true, total: normalizados.length, atualizadoEm: dados.atualizadoEm });
 });
 
 function lerConfigImagens() {
