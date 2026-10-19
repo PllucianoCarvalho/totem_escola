@@ -94,7 +94,10 @@ const storageImagem = multer.diskStorage({
 
 const storagePdfHorarios = multer.diskStorage({
     destination: (req, file, cb) => cb(null, horariosPath),
-    filename: (req, file, cb) => cb(null, "horarios-professores.pdf")
+    filename: (req, file, cb) => {
+        const nome = path.parse(file.originalname).name.replace(/[^a-zA-Z0-9_-]/g, "_");
+        cb(null, `${Date.now()}-${nome}.pdf`);
+    }
 });
 
 const uploadPdfHorarios = multer({
@@ -270,7 +273,7 @@ app.post("/api/horarios/pdf", protegerApi, uploadPdfHorarios.single("pdf"), (req
 });
 
 app.put("/api/horarios", protegerApi, (req, res) => {
-    const { professores } = req.body;
+    const { professores, pdf } = req.body;
     if (!Array.isArray(professores)) {
         return res.status(400).json({ erro: "A lista de horários é inválida." });
     }
@@ -287,8 +290,13 @@ app.put("/api/horarios", protegerApi, (req, res) => {
         return res.status(400).json({ erro: "Preencha professor, turma e componente em todas as linhas." });
     }
 
+    const pdfSeguro = pdf ? path.basename(String(pdf)) : null;
+    if (pdfSeguro && !fs.existsSync(path.join(horariosPath, pdfSeguro))) {
+        return res.status(400).json({ erro: "O PDF selecionado não foi encontrado no servidor." });
+    }
+
     const dados = {
-        pdf: fs.existsSync(caminhoPdfHorarios) ? "horarios-professores.pdf" : null,
+        pdf: pdfSeguro || lerHorarios().pdf,
         atualizadoEm: new Date().toISOString(),
         professores: normalizados
     };
