@@ -17,3 +17,5 @@ body{min-height:100vh}
 .atualizacao{text-align:right;color:#6f809c;font-size:11px;margin-top:auto;padding-top:3px}
 @media(max-width:700px){.grade{grid-template-columns:repeat(2,minmax(0,1fr))}.situacao{font-size:12px}.situacao span{font-size:11px}}
 @media(max-width:420px){.painel{padding:7px;gap:9px}.topo{padding:10px;gap:8px}.grade{gap:7px}.cartao{padding:10px;min-height:78px}.nome{font-size:14px}.etiqueta{font-size:12px}}
+
+.identificacao h1{font-size:16px;line-height:1.2;margin:0 0 4px;font-weight:800}.identificacao p{margin:0;color:#9caecb;font-size:12px}.identificacao{padding:2px 0}
