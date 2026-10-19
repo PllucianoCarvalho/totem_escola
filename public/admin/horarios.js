@@ -57,24 +57,57 @@ async function extrairTexto(file){
 async function extrairTextoPdf(file){
   if(!window.pdfjsLib)throw new Error("A biblioteca PDF.js não carregou.");
   const pdf=await pdfjsLib.getDocument({data:await file.arrayBuffer()}).promise;
-  const paginas=[];
+  const paginas=[],paginasItens=[];
   for(let n=1;n<=pdf.numPages;n++){
     const pagina=await pdf.getPage(n),conteudo=await pagina.getTextContent();
-    const itens=conteudo.items.filter(i=>i.str&&i.str.trim());
-    let linhas=[],linha="",yAnterior=null;
-    for(const item of itens){
-      const y=item.transform?item.transform[5]:null;
-      if(yAnterior!==null&&y!==null&&Math.abs(y-yAnterior)>3){if(linha.trim())linhas.push(linha.trim());linha="";}
-      linha+=item.str+" ";yAnterior=y;
-    }
-    if(linha.trim())linhas.push(linha.trim());
-    paginas.push(linhas.join("\\n"));
+    const itens=conteudo.items.filter(i=>i.str&&i.str.trim()).map(i=>({texto:i.str.trim(),x:i.transform?i.transform[4]:0,y:i.transform?i.transform[5]:0}));
+    const grupos=[];
+    itens.sort((a,b)=>Math.abs(b.y-a.y)>2?b.y-a.y:a.x-b.x).forEach(item=>{
+      let grupo=grupos.find(g=>Math.abs(g.y-item.y)<=2);
+      if(!grupo){grupo={y:item.y,itens:[]};grupos.push(grupo);}
+      grupo.itens.push(item);
+    });
+    grupos.sort((a,b)=>b.y-a.y);
+    grupos.forEach(g=>g.itens.sort((a,b)=>a.x-b.x));
+    paginasItens.push(grupos);
+    paginas.push(grupos.map(g=>g.itens.map(i=>i.texto).join("  ")).join("\n"));
   }
-  return {paginas,total:pdf.numPages};
+  return {paginas,paginasItens,total:pdf.numPages};
+}
+function converterCandidatos(tipo,resultado){
+  const dias={Seg:"Segunda-feira",Ter:"Terça-feira",Qua:"Quarta-feira",Qui:"Quinta-feira",Sex:"Sexta-feira"};
+  const horarios=["07:00","07:50","08:40","09:40","10:30","11:20","12:15","13:05","13:55","14:55","15:45","16:35"];
+  const saida=[];
+  resultado.paginasItens.forEach((grupos,pagina)=>{
+    let dia="";
+    grupos.forEach(g=>{
+      const linha=g.itens.map(i=>i.texto).join(" ");
+      const md=linha.match(/\b(Seg|Ter|Qua|Qui|Sex)\b/i);
+      if(md){const k=md[1].charAt(0).toUpperCase()+md[1].slice(1).toLowerCase();dia=dias[k]||dia;}
+      const mh=linha.match(/\b(\d{2}:\d{2})\b/);
+      if(!mh||!dia||!horarios.includes(mh[1]))return;
+      const texto=linha.replace(mh[1]," ");
+      const pares=[...texto.matchAll(/([^()\n]{2,70}?)\s*\(([^()\n]{2,45})\)/g)];
+      pares.forEach(p=>{
+        const componente=p[1].replace(/^(Seg|Ter|Qua|Qui|Sex)\s*/i,"").trim();
+        const professor=p[2].trim();
+        if(!componente||!professor||/horário escolar gerado|página:/i.test(componente))return;
+        saida.push({dia,horario:mh[1],turma:"",componente,professor,origem:tipo,pagina:pagina+1,conferir:true});
+      });
+    });
+  });
+  return saida;
 }
 function mostrarLeitura(tipo,resultado){
   const sec=document.createElement("section");sec.className="resultado-leitura";
   const titulo=document.createElement("h3");titulo.textContent=({matutino:"Matutino",vespertino:"Vespertino",individual:"Individual dos professores"})[tipo]+" — "+resultado.total+" páginas";sec.appendChild(titulo);
+  const candidatos=converterCandidatos(tipo,resultado);
+  const aviso=document.createElement("p");aviso.textContent="Pré-conversão experimental: "+candidatos.length+" pares componente/professor identificados. Turma/coluna ainda não é inferida automaticamente; revise antes de usar.";sec.appendChild(aviso);
+  const amostra=document.createElement("details");const amostraTitulo=document.createElement("summary");amostraTitulo.textContent="Ver amostra dos candidatos extraídos";amostra.appendChild(amostraTitulo);
+  const tabela=document.createElement("table");const thead=document.createElement("thead");thead.innerHTML="<tr><th>Dia</th><th>Horário</th><th>Componente</th><th>Professor</th><th>Página</th></tr>";tabela.appendChild(thead);
+  const tbody=document.createElement("tbody");
+  candidatos.slice(0,100).forEach(c=>{const tr=document.createElement("tr");[c.dia,c.horario,c.componente,c.professor,String(c.pagina)].forEach(v=>{const td=document.createElement("td");td.textContent=v;tr.appendChild(td);});tbody.appendChild(tr);});
+  tabela.appendChild(tbody);amostra.appendChild(tabela);sec.appendChild(amostra);
   const detalhes=document.createElement("details");const resumo=document.createElement("summary");resumo.textContent="Ver texto extraído do PDF";detalhes.appendChild(resumo);
   resultado.paginas.forEach((texto,i)=>{const h=document.createElement("h4");h.textContent="Página "+(i+1);detalhes.appendChild(h);const pre=document.createElement("pre");pre.textContent=texto||"[Nenhum texto selecionável nesta página]";pre.style.whiteSpace="pre-wrap";pre.style.overflowWrap="anywhere";detalhes.appendChild(pre);});
   sec.appendChild(detalhes);previsualizacaoLeitura.appendChild(sec);
@@ -99,7 +132,7 @@ pdfForm.addEventListener("submit",async e=>{
       const dados=await resposta.json();if(!resposta.ok)throw new Error(dados.erro||"Falha ao enviar "+tipo+".");
       documentosEnviados[tipo]=dados.arquivo;atualizarEstadoDocumentos();
     }
-    statusPdf.textContent="Leitura do texto concluída e três PDFs armazenados. Confira o texto extraído abaixo. A conversão para horários estruturados ainda não foi implementada; não publique registros a partir desta prévia.";
+    statusPdf.textContent="Leitura concluída. A pré-conversão experimental identificou pares de componente/professor para conferência; as turmas ainda não foram associadas com segurança e nada foi publicado.";
   }catch(err){statusPdf.textContent="Falha na leitura/envio: "+err.message;}
   finally{botao.disabled=false;}
 });
