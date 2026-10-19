@@ -1,4 +1,6 @@
 const pdfForm=document.getElementById("pdfForm");
+const pdfMatutino=document.getElementById("pdfMatutino");
+const pdfVespertino=document.getElementById("pdfVespertino");
 const pdfIndividual=document.getElementById("pdfIndividual");
 const estadoDocumentos=document.getElementById("estadoDocumentos");
 const previsualizacaoLeitura=document.getElementById("previsualizacaoLeitura");
@@ -11,7 +13,7 @@ if(window.pdfjsLib)pdfjsLib.GlobalWorkerOptions.workerSrc="https://cdnjs.cloudfl
 let registros=[];
 let aulasPublicadas=[];
 let pdfSelecionado=null;
-let documentosEnviados={individual:null};
+let documentosEnviados={matutino:null,vespertino:null,individual:null};
 
 function renderizar(){
   linhas.innerHTML="";
@@ -116,64 +118,43 @@ async function extrairTextoPdf(file){
   }
   return {paginas,paginasItens,total:pdf.numPages};
 }
-function converterRelatorioIndividual(resultado){
-  const dias=["Seg","Ter","Qua","Qui","Sex"];
-  const nomesDias={"Seg":"Segunda-feira","Ter":"Terça-feira","Qua":"Quarta-feira","Qui":"Quinta-feira","Sex":"Sexta-feira"};
-  const slots=[["07:00","07:50"],["07:50","08:40"],["08:40","09:30"],["09:40","10:30"],["10:30","11:20"],["11:20","12:10"],["12:15","13:05"],["13:05","13:55"],["13:55","14:45"],["14:55","15:45"],["15:45","16:35"],["16:35","17:25"]];
-  const aulas=[];
-  const ehRotuloAula=t=>/^0?[1-6][º°o]?$/i.test(String(t).trim());
-  const ehCabecalho=l=>l.itens.some(i=>/^Hor$/i.test(i.texto))&&dias.filter(d=>l.itens.some(i=>i.texto===d)).length>=4;
-  const ehNomeProfessor=t=>/^[A-ZÁÉÍÓÚÂÊÔÃÕÇ][A-ZÁÉÍÓÚÂÊÔÃÕÇ .'-]{2,}$/.test(String(t).trim())&&!ehRotuloAula(t)&&!/^(HOR|SEG|TER|QUA|QUI|SEX|H\/A|ROBO|COLÉGIO|ESTADUAL|RELATÓRIO|PROFESSORES|INDIVIDUAL)$/i.test(String(t).trim());
+function converterGradeTurmas(tipo,resultado){
+  const dias={Seg:"Segunda-feira",Ter:"Terça-feira",Qua:"Quarta-feira",Qui:"Quinta-feira",Sex:"Sexta-feira"};
+  const intervalos={"07:00":["07:00","07:50"],"07:50":["07:50","08:40"],"08:40":["08:40","09:30"],"09:40":["09:40","10:30"],"10:30":["10:30","11:20"],"11:20":["11:20","12:10"],"12:15":["12:15","13:05"],"13:05":["13:05","13:55"],"13:55":["13:55","14:45"],"14:55":["14:55","15:45"],"15:45":["15:45","16:35"],"16:35":["16:35","17:25"]};
+  const saida=[];
   resultado.paginasItens.forEach((grupos,pagina)=>{
-    const linhas=grupos.map(g=>({y:g.y,itens:g.itens.slice().sort((a,b)=>a.x-b.x)})).sort((a,b)=>b.y-a.y);
     const cabecalhos=[];
-    linhas.forEach((linha,idx)=>{
-      if(!ehCabecalho(linha))return;
-      const hors=linha.itens.filter(i=>/^Hor$/i.test(i.texto)).sort((a,b)=>a.x-b.x);
-      hors.forEach((hor,hi)=>{
-        const proxHor=hors[hi+1]?.x??Infinity;
-        const blocoFim=Number.isFinite(proxHor)?proxHor:hor.x+260;
-        const diasX=dias.map(d=>{const item=linha.itens.find(i=>i.texto===d&&i.x>hor.x&&i.x<blocoFim);return item?item.x:null;});
-        if(diasX.filter(x=>x!==null).length<4)return;
-        const nomeCandidatos=[];
-        linhas.slice(Math.max(0,idx-5),idx).forEach(l=>{
-          l.itens.forEach(item=>{
-            if(item.x>=hor.x-25&&item.x<blocoFim&&ehNomeProfessor(item.texto)){
-              nomeCandidatos.push({texto:item.texto.trim(),x:item.x,y:l.y,distancia:Math.abs(l.y-linha.y)});
-            }
-          });
+    grupos.forEach(g=>g.itens.forEach(item=>{const turma=item.texto.replace(/\s+/g,"").toUpperCase();if(/^(6[A-C]|7[A-C]|8[A-C]|9[A-E]|[123][A-D])$/.test(turma)&&!cabecalhos.some(c=>c.turma===turma))cabecalhos.push({turma,x:item.x});}));
+    cabecalhos.sort((a,b)=>a.x-b.x);
+    if(!cabecalhos.length)return;
+    const linhas=grupos.map(g=>{const itens=g.itens;const timeItem=itens.find(i=>/^\d{2}:\d{2}$/.test(i.texto));const diaItem=itens.find(i=>dias[i.texto]);return {itens,time:timeItem?timeItem.texto:"",dia:diaItem?dias[diaItem.texto]:""};});
+    for(let i=0;i<linhas.length;i++){
+      if(!linhas[i].dia)continue;
+      const dia=linhas[i].dia;let inicio=i-1;
+      while(inicio>=0&&linhas[inicio].time&& !linhas[inicio].dia)inicio--;
+      inicio=Math.max(i-1,inicio+1);
+      let fim=i+1;while(fim<linhas.length&&!linhas[fim].dia)fim++;
+      for(let j=inicio;j<fim;j++){
+        const row=linhas[j];if(!row.time||!intervalos[row.time])continue;
+        const celulas=cabecalhos.map(c=>({turma:c.turma,x:c.x,textos:[]}));
+        row.itens.forEach(item=>{
+          if(item.texto===row.time||dias[item.texto]||/^(6[A-C]|7[A-C]|8[A-C]|9[A-E]|[123][A-D])$/.test(item.texto)||/^\d{2}:\d{2}$/.test(item.texto))return;
+          if(item.x<cabecalhos[0].x-100)return;
+          let melhor=celulas[0];for(const cel of celulas){if(Math.abs(item.x-cel.x)<Math.abs(item.x-melhor.x))melhor=cel;}
+          melhor.textos.push({x:item.x,texto:item.texto});
         });
-        const nomeCandidato=nomeCandidatos.sort((a,b)=>a.distancia-b.distancia||Math.abs(a.x-hor.x)-Math.abs(b.x-hor.x))[0];
-        if(nomeCandidato)cabecalhos.push({y:linha.y,horX:hor.x,limiteX:blocoFim,diasX,nome:nomeCandidato.texto});
-      });
-    });
-    cabecalhos.forEach(cab=>{
-      const limiteY=linhas.filter(l=>l.y<cab.y&&ehCabecalho(l)).sort((a,b)=>b.y-a.y)[0]?.y??-Infinity;
-      const ocorrencias={};
-      linhas.filter(l=>l.y<cab.y&&l.y>limiteY).forEach(linha=>{
-        const rotulo=linha.itens.find(i=>i.x>=cab.horX-5&&i.x<cab.limiteX&&ehRotuloAula(i.texto));
-        if(!rotulo)return;
-        const numero=Number(rotulo.texto.match(/\d+/)[0]);
-        const ocorrencia=ocorrencias[numero]||0;
-        ocorrencias[numero]=ocorrencia+1;
-        const slotIndex=(ocorrencia===0?0:6)+(numero-1);
-        if(slotIndex>=slots.length)return;
-        dias.forEach((dia,di)=>{
-          const x=cab.diasX[di];
-          if(x===null)return;
-          const nextX=cab.diasX.slice(di+1).find(v=>v!==null);
-          const cel=linha.itens.filter(i=>i.x>=x-3&&i.x<cab.limiteX&&(nextX===undefined||i.x<nextX-3)&&!ehRotuloAula(i.texto)&&!/^(Hor|Seg|Ter|Qua|Qui|Sex)$/i.test(i.texto)).map(i=>i.texto).join(" ").replace(/\s+/g," ").trim();
-          if(!cel||/^-{2,}$/.test(cel)||/^H\/?A$/i.test(cel))return;
-          const turma=(cel.match(/\b(?:[1-3][A-D]|[6-9][A-E])(?:\s*II)?\b/i)||[])[0];
-          if(!turma)return;
-          aulas.push({dia:nomesDias[dia],inicio:slots[slotIndex][0],fim:slots[slotIndex][1],turma:turma.replace(/\s+/g," ").trim(),componente:"A confirmar",professor:cab.nome,turno:slotIndex<6?"manhã":"tarde",origem:"individual",pagina:pagina+1});
+        celulas.forEach(c=>{
+          const texto=c.textos.sort((x,y)=>x.x-y.x).map(x=>x.texto).join(" ").replace(/\s+/g," ").trim();
+          if(!texto||/^[-–—]+$/.test(texto)||/^RC\b/i.test(texto))return;
+          const m=texto.match(/^(.+?)\s*\(([^()]+)\)\s*$/);if(!m)return;
+          const componente=m[1].trim(),professor=m[2].trim();
+          if(!componente||!professor)return;
+          saida.push({dia,inicio:intervalos[row.time][0],fim:intervalos[row.time][1],turma:c.turma,componente,professor,turno:tipo==="matutino"?"manhã":"tarde",origem:tipo,pagina:pagina+1});
         });
-      });
-    });
+      }
+    }
   });
-  const unicos=new Map();
-  aulas.forEach(a=>unicos.set([a.dia,a.inicio,a.turma,a.professor].join("|"),a));
-  return [...unicos.values()];
+  const unicos=new Map();saida.forEach(a=>unicos.set([a.dia,a.inicio,a.turma,a.professor,a.componente].join("|"),a));return [...unicos.values()];
 }
 function mostrarGradeConvertida(aulas){
   previsualizacaoLeitura.innerHTML="";
@@ -185,34 +166,37 @@ function mostrarGradeConvertida(aulas){
 }
 pdfForm.addEventListener("submit",async e=>{
   e.preventDefault();
-  const arquivo=pdfIndividual.files[0];
-  if(!arquivo){statusPdf.textContent="Selecione o relatório individual em PDF.";return;}
-  const botao=document.getElementById("enviarPdfs");botao.disabled=true;previsualizacaoLeitura.innerHTML="";statusPdf.textContent="Lendo o relatório individual...";if(estadoConversao)estadoConversao.textContent="Extraindo os horários individuais dos professores.";
+  const arquivos={matutino:pdfMatutino.files[0],vespertino:pdfVespertino.files[0],individual:pdfIndividual.files[0]};
+  if(Object.values(arquivos).some(f=>!f)){statusPdf.textContent="Selecione os três PDFs antes de continuar.";return;}
+  const botao=document.getElementById("enviarPdfs");botao.disabled=true;previsualizacaoLeitura.innerHTML="";statusPdf.textContent="Lendo os três relatórios...";if(estadoConversao)estadoConversao.textContent="Extraindo os horários dos relatórios matutino e vespertino.";const resultados={};
   try{
-    const leitura=await extrairTextoPdf(arquivo);
-    if(leitura.paginas.join("").trim().length<30)throw new Error("O PDF individual não contém texto selecionável suficiente.");
-    const formData=new FormData();formData.append("pdf",arquivo);
-    const resposta=await fetch("/api/horarios/pdf/individual",{method:"POST",body:formData});
-    const dados=await resposta.json();if(!resposta.ok)throw new Error(dados.erro||"Falha ao enviar o relatório individual.");
-    documentosEnviados={individual:dados.arquivo};pdfSelecionado=dados.arquivo;atualizarEstadoDocumentos();
-    const aulas=converterRelatorioIndividual(leitura);
+    for(const [tipo,file] of Object.entries(arquivos)){
+      statusPdf.textContent="Lendo "+tipo+"...";
+      const leitura=await extrairTextoPdf(file);
+      if(leitura.paginas.join("").trim().length<30)throw new Error("O PDF "+tipo+" não contém texto selecionável suficiente.");
+      resultados[tipo]=leitura;
+      const formData=new FormData();formData.append("pdf",file);
+      const resposta=await fetch("/api/horarios/pdf/"+tipo,{method:"POST",body:formData});
+      const dados=await resposta.json();if(!resposta.ok)throw new Error(dados.erro||"Falha ao enviar "+tipo+".");
+      documentosEnviados[tipo]=dados.arquivo;atualizarEstadoDocumentos();
+    }
+    const aulas=[...converterGradeTurmas("matutino",resultados.matutino),...converterGradeTurmas("vespertino",resultados.vespertino)];
     registros=aulas.map(a=>({professor:a.professor,turma:a.turma,componente:a.componente,horario:a.dia+" "+a.inicio+"–"+a.fim,dia:a.dia,inicio:a.inicio,fim:a.fim,turno:a.turno,origem:a.origem}));
     renderizar();
-    if(!aulas.length)throw new Error("O relatório foi enviado, mas a leitura automática não identificou aulas com segurança. A grade publicada anterior foi preservada.");
+    if(!aulas.length)throw new Error("Os três PDFs foram lidos, mas não foram identificadas aulas com segurança. A grade publicada anterior foi preservada.");
     mostrarGradeConvertida(aulas);
-    if(estadoConversao)estadoConversao.textContent="Leitura experimental: "+aulas.length+" aulas identificadas. O relatório individual informa turma e horário, mas não o componente curricular; esses campos precisam ser confirmados na revisão.";
-    statusPdf.textContent="Relatório individual enviado. Foram identificadas "+aulas.length+" aulas. O componente curricular não consta neste relatório e está marcado como A confirmar; revise antes de usar a grade.";
-    statusPdf.textContent="Prévia pronta: "+aulas.length+" aulas identificadas. Nada foi publicado. Revise os registros, complete os componentes curriculares e clique em Publicar horários revisados.";
-  }catch(err){statusPdf.textContent="Falha na conversão: "+err.message;if(estadoConversao)estadoConversao.textContent="Não foi possível concluir a conversão. Veja a mensagem acima; a grade publicada anterior foi preservada.";}
+    if(estadoConversao)estadoConversao.textContent="Prévia: "+aulas.length+" aulas extraídas dos relatórios matutino e vespertino. Nada foi publicado automaticamente.";
+    statusPdf.textContent="Prévia pronta: "+aulas.length+" aulas. Confira os registros antes de publicar.";
+  }catch(err){statusPdf.textContent="Falha na conversão: "+err.message;if(estadoConversao)estadoConversao.textContent="Não foi possível concluir a conversão. A grade publicada anterior foi preservada.";}
   finally{botao.disabled=false;}
 });
 function atualizarEstadoDocumentos(){
-  const nomes={individual:"Relatório individual"};
+  const nomes={matutino:"Relatório matutino",vespertino:"Relatório vespertino",individual:"Relatório individual"};
   estadoDocumentos.innerHTML="";
   Object.entries(nomes).forEach(([tipo,nome])=>{const li=document.createElement("li");li.textContent=nome+": "+(documentosEnviados[tipo]?"enviado ("+documentosEnviados[tipo]+")":"ainda não enviado");estadoDocumentos.appendChild(li);});
 }
 async function carregarDocumentos(){
-  try{const r=await fetch("/api/horarios/documentos");if(!r.ok)return;const d=await r.json();documentosEnviados={individual:d.individual};atualizarEstadoDocumentos();}
+  try{const r=await fetch("/api/horarios/documentos");if(!r.ok)return;const d=await r.json();documentosEnviados={matutino:d.matutino,vespertino:d.vespertino,individual:d.individual};atualizarEstadoDocumentos();}
   catch{}
 }
 document.getElementById("adicionarLinha").addEventListener("click",()=>{registros.push({professor:"",turma:"",componente:"",horario:""});renderizar();});
