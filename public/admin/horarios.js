@@ -75,66 +75,67 @@ async function extrairTextoPdf(file){
   }
   return {paginas,paginasItens,total:pdf.numPages};
 }
-function converterCandidatos(tipo,resultado){
+function converterGradeTurmas(tipo,resultado){
   const dias={Seg:"Segunda-feira",Ter:"Terça-feira",Qua:"Quarta-feira",Qui:"Quinta-feira",Sex:"Sexta-feira"};
-  const horarios=["07:00","07:50","08:40","09:40","10:30","11:20","12:15","13:05","13:55","14:55","15:45","16:35"];
+  const intervalos={"07:50":["07:50","08:40"],"08:40":["08:40","09:30"],"09:40":["09:40","10:30"],"10:30":["10:30","11:20"],"11:20":["11:20","12:10"],"13:05":["13:05","13:55"],"13:55":["13:55","14:45"],"14:55":["14:55","15:45"],"15:45":["15:45","16:35"],"16:35":["16:35","17:25"]};
   const saida=[];
   resultado.paginasItens.forEach((grupos,pagina)=>{
-    let dia="";
-    grupos.forEach(g=>{
-      const linha=g.itens.map(i=>i.texto).join(" ");
-      const md=linha.match(/\b(Seg|Ter|Qua|Qui|Sex)\b/i);
-      if(md){const k=md[1].charAt(0).toUpperCase()+md[1].slice(1).toLowerCase();dia=dias[k]||dia;}
-      const mh=linha.match(/\b(\d{2}:\d{2})\b/);
-      if(!mh||!dia||!horarios.includes(mh[1]))return;
-      const texto=linha.replace(mh[1]," ");
-      const pares=[...texto.matchAll(/([^()\n]{2,70}?)\s*\(([^()\n]{2,45})\)/g)];
-      pares.forEach(p=>{
-        const componente=p[1].replace(/^(Seg|Ter|Qua|Qui|Sex)\s*/i,"").trim();
-        const professor=p[2].trim();
-        if(!componente||!professor||/horário escolar gerado|página:/i.test(componente))return;
-        saida.push({dia,horario:mh[1],turma:"",componente,professor,origem:tipo,pagina:pagina+1,conferir:true});
+    let cabecalhos=[];
+    for(const g of grupos){const encontrados=g.itens.filter(i=>/^(?:6|7|8|9|1|2|3)[A-E]$/.test(i.texto)).map(i=>({turma:i.texto,x:i.x}));if(encontrados.length){cabecalhos=encontrados.sort((a,b)=>a.x-b.x);break;}}
+    if(!cabecalhos.length)return;
+    const linhas=grupos.map(g=>{const itens=g.itens;const time=itens.find(i=>/^\\d{2}:\\d{2}$/.test(i.texto));const diaItem=itens.find(i=>dias[i.texto]);return {itens,time:time?.texto||"",dia:diaItem?dias[diaItem.texto]:""};});
+    linhas.forEach((linha,i)=>{
+      if(!linha.dia)return;
+      const indices=[i-1,i,i+1,i+2,i+3];
+      indices.forEach(idx=>{
+        if(idx<0||idx>=linhas.length)return;
+        const row=linhas[idx];if(!row.time||!intervalos[row.time])return;
+        const celulas=cabecalhos.map(c=>({turma:c.turma,x:c.x,textos:[]}));
+        row.itens.forEach(item=>{
+          if(item.texto===row.time||dias[item.texto]||/^(?:6|7|8|9|1|2|3)[A-E]$/.test(item.texto)||/^\\d{2}:\\d{2}$/.test(item.texto))return;
+          if(item.x<cabecalhos[0].x-95)return;
+          let melhor=celulas[0];for(const cel of celulas){if(Math.abs(item.x-cel.x)<Math.abs(item.x-melhor.x))melhor=cel;}
+          melhor.textos.push({x:item.x,texto:item.texto});
+        });
+        celulas.forEach(c=>{
+          const texto=c.textos.sort((a,b)=>a.x-b.x).map(x=>x.texto).join(" ").replace(/\\s+/g," ").trim();
+          if(!texto||/^[-–—]+$/.test(texto))return;
+          const m=texto.match(/^(.+?)\\s*\\(([^()]+)\\)\\s*$/);if(!m)return;
+          const componente=m[1].trim(),professor=m[2].trim();
+          if(!componente||!professor||/^RC\\b/i.test(componente))return;
+          saida.push({dia:linha.dia,inicio:intervalos[row.time][0],fim:intervalos[row.time][1],turma:c.turma,componente,professor,turno:tipo==="matutino"?"manhã":"tarde",origem:tipo,pagina:pagina+1});
+        });
       });
     });
   });
-  return saida;
+  const unicos=new Map();saida.forEach(a=>unicos.set([a.dia,a.inicio,a.turma,a.professor,a.componente].join("|"),a));return [...unicos.values()];
 }
-function mostrarLeitura(tipo,resultado){
-  const sec=document.createElement("section");sec.className="resultado-leitura";
-  const titulo=document.createElement("h3");titulo.textContent=({matutino:"Matutino",vespertino:"Vespertino",individual:"Individual dos professores"})[tipo]+" — "+resultado.total+" páginas";sec.appendChild(titulo);
-  const candidatos=converterCandidatos(tipo,resultado);
-  const aviso=document.createElement("p");aviso.textContent="Pré-conversão experimental: "+candidatos.length+" pares componente/professor identificados. Turma/coluna ainda não é inferida automaticamente; revise antes de usar.";sec.appendChild(aviso);
-  const amostra=document.createElement("details");const amostraTitulo=document.createElement("summary");amostraTitulo.textContent="Ver amostra dos candidatos extraídos";amostra.appendChild(amostraTitulo);
-  const tabela=document.createElement("table");const thead=document.createElement("thead");thead.innerHTML="<tr><th>Dia</th><th>Horário</th><th>Componente</th><th>Professor</th><th>Página</th></tr>";tabela.appendChild(thead);
-  const tbody=document.createElement("tbody");
-  candidatos.slice(0,100).forEach(c=>{const tr=document.createElement("tr");[c.dia,c.horario,c.componente,c.professor,String(c.pagina)].forEach(v=>{const td=document.createElement("td");td.textContent=v;tr.appendChild(td);});tbody.appendChild(tr);});
-  tabela.appendChild(tbody);amostra.appendChild(tabela);sec.appendChild(amostra);
-  const detalhes=document.createElement("details");const resumo=document.createElement("summary");resumo.textContent="Ver texto extraído do PDF";detalhes.appendChild(resumo);
-  resultado.paginas.forEach((texto,i)=>{const h=document.createElement("h4");h.textContent="Página "+(i+1);detalhes.appendChild(h);const pre=document.createElement("pre");pre.textContent=texto||"[Nenhum texto selecionável nesta página]";pre.style.whiteSpace="pre-wrap";pre.style.overflowWrap="anywhere";detalhes.appendChild(pre);});
-  sec.appendChild(detalhes);previsualizacaoLeitura.appendChild(sec);
+function mostrarGradeConvertida(aulas){
+  previsualizacaoLeitura.innerHTML="";
+  const sec=document.createElement("section");const h=document.createElement("h3");h.textContent="Grade extraída dos relatórios de turmas";sec.appendChild(h);
+  const resumo=document.createElement("p");resumo.textContent=aulas.length+" aulas com professor, componente e turma identificados.";sec.appendChild(resumo);
+  const details=document.createElement("details");details.open=true;const sum=document.createElement("summary");sum.textContent="Conferir grade convertida";details.appendChild(sum);
+  const table=document.createElement("table");const thead=document.createElement("thead");thead.innerHTML="<tr><th>Dia</th><th>Horário</th><th>Turma</th><th>Componente</th><th>Professor</th></tr>";table.appendChild(thead);const tbody=document.createElement("tbody");
+  aulas.slice(0,300).forEach(a=>{const tr=document.createElement("tr");[a.dia,a.inicio+"–"+a.fim,a.turma,a.componente,a.professor].forEach(v=>{const td=document.createElement("td");td.textContent=v;tr.appendChild(td);});tbody.appendChild(tr);});table.appendChild(tbody);details.appendChild(table);sec.appendChild(details);previsualizacaoLeitura.appendChild(sec);
 }
 pdfForm.addEventListener("submit",async e=>{
   e.preventDefault();
   const arquivos={matutino:pdfMatutino.files[0],vespertino:pdfVespertino.files[0],individual:pdfIndividual.files[0]};
-  const faltantes=Object.entries(arquivos).filter(([tipo,file])=>!file).map(([tipo])=>tipo);
-  if(faltantes.length){statusPdf.textContent="Selecione os três arquivos: Matutino, Vespertino e Individual.";return;}
-  for(const [tipo,file] of Object.entries(arquivos)){if(!file.name.toLowerCase().endsWith(".pdf")){statusPdf.textContent="O arquivo "+tipo+" não parece ser um PDF.";return;}}
-  const botao=document.getElementById("enviarPdfs");botao.disabled=true;previsualizacaoLeitura.innerHTML="";statusPdf.textContent="Lendo e enviando os relatórios...";if(estadoConversao)estadoConversao.textContent="Processando os três relatórios. A prévia aparecerá abaixo quando a leitura terminar.";
+  if(Object.values(arquivos).some(f=>!f)){statusPdf.textContent="Selecione os três PDFs antes de continuar.";return;}
+  const botao=document.getElementById("enviarPdfs");botao.disabled=true;previsualizacaoLeitura.innerHTML="";statusPdf.textContent="Lendo e enviando os três relatórios...";if(estadoConversao)estadoConversao.textContent="Extraindo as células das tabelas e montando a grade.";const resultados={};
   try{
     for(const [tipo,file] of Object.entries(arquivos)){
-      statusPdf.textContent="Lendo "+tipo+"...";
-      const leitura=await extrairTextoPdf(file);
-      const totalCaracteres=leitura.paginas.join("").trim().length;
-      if(totalCaracteres<30)throw new Error("O PDF "+tipo+" não contém texto selecionável suficiente. Pode ser necessário OCR.");
-      mostrarLeitura(tipo,leitura);
-      statusPdf.textContent="Enviando "+tipo+"...";
-      const formData=new FormData();formData.append("pdf",file);
-      const resposta=await fetch("/api/horarios/pdf/"+tipo,{method:"POST",body:formData});
-      const dados=await resposta.json();if(!resposta.ok)throw new Error(dados.erro||"Falha ao enviar "+tipo+".");
-      documentosEnviados[tipo]=dados.arquivo;atualizarEstadoDocumentos();
+      statusPdf.textContent="Lendo "+tipo+"...";const leitura=await extrairTextoPdf(file);if(leitura.paginas.join("").trim().length<30)throw new Error("O PDF "+tipo+" não contém texto selecionável suficiente.");resultados[tipo]=leitura;
+      const formData=new FormData();formData.append("pdf",file);const resposta=await fetch("/api/horarios/pdf/"+tipo,{method:"POST",body:formData});const dados=await resposta.json();if(!resposta.ok)throw new Error(dados.erro||"Falha ao enviar "+tipo+".");documentosEnviados[tipo]=dados.arquivo;atualizarEstadoDocumentos();
     }
-    statusPdf.textContent="Leitura concluída. A pré-conversão experimental identificou pares de componente/professor para conferência; as turmas ainda não foram associadas com segurança e nada foi publicado.";if(estadoConversao)estadoConversao.textContent="Leitura concluída. Confira abaixo a prévia experimental de cada relatório. Ela não é ainda a grade definitiva por turma.";
-  }catch(err){statusPdf.textContent="Falha na leitura/envio: "+err.message;if(estadoConversao)estadoConversao.textContent="A leitura não foi concluída. Verifique a mensagem acima e tente novamente."; }
+    const aulas=[...converterGradeTurmas("matutino",resultados.matutino),...converterGradeTurmas("vespertino",resultados.vespertino)];
+    if(!aulas.length)throw new Error("Os PDFs foram enviados, mas não consegui reconhecer as células de turma/professor. A grade não foi alterada.");
+    mostrarGradeConvertida(aulas);
+    if(estadoConversao)estadoConversao.textContent="Conversão concluída: "+aulas.length+" aulas identificadas. A grade foi salva para exibição automática por dia e horário.";
+    statusPdf.textContent="Os três PDFs foram enviados. Foram identificadas "+aulas.length+" aulas; salvando a grade para o Totem...";
+    const salvar=await fetch("/api/horarios/importar",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({aulas})});const salvo=await salvar.json();if(!salvar.ok)throw new Error(salvo.erro||"Não foi possível salvar a grade.");
+    statusPdf.textContent="Concluído: "+salvo.total+" aulas salvas. A página pública será atualizada automaticamente.";
+  }catch(err){statusPdf.textContent="Falha na conversão: "+err.message;if(estadoConversao)estadoConversao.textContent="Não foi possível concluir a conversão. Veja a mensagem acima; a grade publicada anterior foi preservada.";}
   finally{botao.disabled=false;}
 });
 function atualizarEstadoDocumentos(){
