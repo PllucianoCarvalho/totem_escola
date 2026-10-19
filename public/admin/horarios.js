@@ -183,6 +183,7 @@ pdfForm.addEventListener("submit",async e=>{
     statusPdf.textContent="Os três PDFs foram enviados. Foram identificadas "+aulas.length+" aulas; salvando a grade para o Totem...";
     const salvar=await fetch("/api/horarios/importar",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({aulas})});const salvo=await salvar.json();if(!salvar.ok)throw new Error(salvo.erro||"Não foi possível salvar a grade.");
     const totalDetectado=aulas.length;const total12h15=aulas.filter(a=>a.inicio==="12:15").length;statusPdf.textContent=salvo.total!==totalDetectado?"ATENÇÃO: "+totalDetectado+" identificadas, mas "+salvo.total+" aceitas. Diferença: "+(totalDetectado-salvo.total)+". Aulas iniciadas às 12:15 detectadas: "+total12h15+".":"Concluído: "+salvo.total+" aulas salvas; "+total12h15+" iniciadas às 12:15. Confira se os totais batem com os PDFs.";
+    await carregarAtual();
   }catch(err){statusPdf.textContent="Falha na conversão: "+err.message;if(estadoConversao)estadoConversao.textContent="Não foi possível concluir a conversão. Veja a mensagem acima; a grade publicada anterior foi preservada.";}
   finally{botao.disabled=false;}
 });
