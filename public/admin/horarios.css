@@ -16,3 +16,9 @@
 .atalho-consulta:hover{filter:brightness(.94)}
 #consultaGrade{scroll-margin-top:18px}
 @media(max-width:480px){.atalhos-horarios{align-items:stretch;flex-direction:column}.atalho-consulta{justify-content:center;text-align:center}}
+
+/* Botão flutuante para voltar ao topo a partir de qualquer seção */
+.botao-voltar-topo{position:fixed;right:22px;bottom:22px;z-index:1000;display:flex;align-items:center;gap:8px;padding:13px 17px;border:0;border-radius:999px;background:#1146f0;color:#fff;font-size:15px;font-weight:700;box-shadow:0 6px 22px #17203335;cursor:pointer}
+.botao-voltar-topo:hover{filter:brightness(.92);transform:translateY(-2px)}
+.botao-voltar-topo:focus-visible{outline:3px solid #efcc00;outline-offset:3px}
+@media(max-width:480px){.botao-voltar-topo{right:12px;bottom:12px;padding:12px 14px}.botao-voltar-topo span{font-size:13px}}
