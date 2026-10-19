@@ -9,18 +9,11 @@ body{min-height:100vh}
 .situacao{text-align:right;display:flex;flex-direction:column;gap:3px;font-size:14px}
 .situacao strong{color:var(--verde);font-weight:750}
 .situacao span{color:var(--suave);font-size:13px}
-.controles{display:grid;grid-template-columns:minmax(180px,1fr) auto auto;gap:8px}
-#busca,.modo{height:41px;border:1px solid var(--borda);border-radius:11px;background:var(--painel);color:var(--texto);font:inherit}
-#busca{padding:0 12px;min-width:0;outline:none}
-#busca:focus{border-color:var(--azul)}
-#busca::placeholder{color:#78869e}
-.modo{padding:0 13px;cursor:pointer;white-space:nowrap}
-.modo.ativo{background:var(--azul);border-color:var(--azul);color:#fff}
 .grade{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px;align-content:start}
 .cartao{min-height:82px;border:1px solid var(--borda);border-radius:14px;background:var(--painel);padding:13px 12px;overflow:hidden}
 .nome{font-size:15px;font-weight:750;line-height:1.25;margin:0 0 9px;overflow-wrap:anywhere}
 .etiqueta{display:inline-block;max-width:100%;background:var(--tag);color:#b9c9e8;border-radius:7px;padding:3px 7px;font-size:13px;line-height:1.25;overflow-wrap:anywhere}
 .vazio{grid-column:1/-1;border:1px solid var(--borda);border-radius:14px;background:var(--painel);padding:20px;color:var(--suave)}
 .atualizacao{text-align:right;color:#6f809c;font-size:11px;margin-top:auto;padding-top:3px}
-@media(max-width:700px){.grade{grid-template-columns:repeat(2,minmax(0,1fr))}.controles{grid-template-columns:1fr 1fr}.controles #busca{grid-column:1/-1}.situacao{font-size:12px}.situacao span{font-size:11px}}
-@media(max-width:420px){.painel{padding:7px;gap:9px}.topo{padding:10px;gap:8px}.grade{gap:7px}.cartao{padding:10px;min-height:78px}.nome{font-size:14px}.etiqueta{font-size:12px}.modo{padding:0 8px;font-size:13px}}
+@media(max-width:700px){.grade{grid-template-columns:repeat(2,minmax(0,1fr))}situacao{font-size:12px}.situacao span{font-size:11px}}
+@media(max-width:420px){.painel{padding:7px;gap:9px}.topo{padding:10px;gap:8px}.grade{gap:7px}.cartao{padding:10px;min-height:78px}.nome{font-size:14px}.etiqueta{font-size:12px}}
