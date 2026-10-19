@@ -312,7 +312,7 @@ app.post("/api/horarios/importar", protegerApi, (req, res) => {
     res.json({ sucesso: true, total: normalizadas.length, atualizadoEm: dados.atualizadoEm });
 });
 app.put("/api/horarios", protegerApi, (req, res) => {
-    const { professores, pdf } = req.body;
+    const { professores, pdf, aulas } = req.body;
     if (!Array.isArray(professores)) {
         return res.status(400).json({ erro: "A lista de horários é inválida." });
     }
@@ -322,7 +322,11 @@ app.put("/api/horarios", protegerApi, (req, res) => {
         sala: String(item.sala || "").trim(),
         turma: String(item.turma || "").trim(),
         componente: String(item.componente || "").trim(),
-        horario: String(item.horario || "").trim()
+        horario: String(item.horario || "").trim(),
+        dia: String(item.dia || "").trim(),
+        inicio: String(item.inicio || "").trim(),
+        fim: String(item.fim || "").trim(),
+        turno: String(item.turno || "").trim()
     }));
 
     if (normalizados.some(item => !item.professor || !item.turma || !item.componente)) {
@@ -334,14 +338,36 @@ app.put("/api/horarios", protegerApi, (req, res) => {
         return res.status(400).json({ erro: "O PDF selecionado não foi encontrado no servidor." });
     }
 
+    const anterior = lerHorarios();
+    const aulasRecebidas = Array.isArray(aulas) ? aulas : normalizados;
+    const aulasNormalizadas = aulasRecebidas.map((item) => {
+        let dia = String(item.dia || "").trim();
+        let inicio = String(item.inicio || "").trim();
+        let fim = String(item.fim || "").trim();
+        const horario = String(item.horario || "").trim();
+        if ((!dia || !inicio || !fim) && horario) {
+            const m = horario.match(/^(segunda-feira|terça-feira|quarta-feira|quinta-feira|sexta-feira|sábado|domingo)\\s+(\\d{2}:\\d{2})\\s*[–-]\\s*(\\d{2}:\\d{2})$/i);
+            if (m) { dia = dia || m[1]; inicio = inicio || m[2]; fim = fim || m[3]; }
+        }
+        return {
+            dia, inicio, fim,
+            turma: String(item.turma || "").trim(),
+            componente: String(item.componente || "").trim(),
+            professor: String(item.professor || "").trim(),
+            turno: String(item.turno || "").trim(),
+            origem: String(item.origem || "").trim()
+        };
+    }).filter(item => item.professor && item.turma && item.componente);
+
     const dados = {
-        pdf: pdfSeguro || lerHorarios().pdf,
+        pdf: pdfSeguro || anterior.pdf,
         atualizadoEm: new Date().toISOString(),
-        professores: normalizados
+        professores: normalizados,
+        aulas: aulasNormalizadas.length ? aulasNormalizadas : anterior.aulas
     };
 
     fs.writeFileSync(caminhoHorarios, JSON.stringify(dados, null, 2), "utf8");
-    res.json({ sucesso: true, total: normalizados.length, atualizadoEm: dados.atualizadoEm });
+    res.json({ sucesso: true, total: normalizados.length, totalAulas: dados.aulas.length, atualizadoEm: dados.atualizadoEm });
 });
 
 function lerConfigImagens() {
