@@ -129,13 +129,15 @@ function converterRelatorioIndividual(resultado){
     const cabecalhos=[];
     linhas.forEach((linha,idx)=>{
       if(!ehCabecalho(linha))return;
-      const hors=linha.itens.filter(i=>/^Hor$/i.test(i.texto));
+      const hors=linha.itens.filter(i=>/^Hor$/i.test(i.texto)).sort((a,b)=>a.x-b.x);
+      const linhasAnteriores=linhas.slice(Math.max(0,idx-3),idx);
+      const linhaNomes=linhasAnteriores.map(l=>({y:l.y,nomes:l.itens.filter(i=>ehNomeProfessor(i.texto)).sort((a,b)=>a.x-b.x)})).filter(l=>l.nomes.length);
+      const nomes=linhaNomes.sort((a,b)=>b.nomes.length-a.nomes.length||Math.abs(a.y-linha.y)-Math.abs(b.y-linha.y))[0]?.nomes||[];
       hors.forEach((hor,hi)=>{
         const proxHor=hors[hi+1]?.x??Infinity;
-        const blocoFim=Math.min(proxHor,hor.x+240);
+        const blocoFim=Number.isFinite(proxHor)?proxHor:hor.x+240;
         const diasX=dias.map(d=>{const item=linha.itens.find(i=>i.texto===d&&i.x>hor.x&&i.x<blocoFim);return item?item.x:null;});
-        const nomeItens=linhas.slice(Math.max(0,idx-2),idx).flatMap(l=>l.itens).filter(i=>i.x>=hor.x-10&&i.x<blocoFim&&ehNomeProfessor(i.texto));
-        const nome=nomeItens.sort((a,b)=>Math.abs(a.x-hor.x)-Math.abs(b.x-hor.x))[0]?.texto.trim()||"";
+        const nome=nomes[hi]?.texto.trim()||"";
         if(diasX.filter(x=>x!==null).length>=4&&nome)cabecalhos.push({y:linha.y,horX:hor.x,limiteX:blocoFim,diasX,nome});
       });
     });
