@@ -175,6 +175,8 @@ pdfForm.addEventListener("submit",async e=>{
       const formData=new FormData();formData.append("pdf",file);const resposta=await fetch("/api/horarios/pdf/"+tipo,{method:"POST",body:formData});const dados=await resposta.json();if(!resposta.ok)throw new Error(dados.erro||"Falha ao enviar "+tipo+".");documentosEnviados[tipo]=dados.arquivo;atualizarEstadoDocumentos();
     }
     const aulas=[...converterGradeTurmas("matutino",resultados.matutino),...converterGradeTurmas("vespertino",resultados.vespertino)];
+    registros=aulas.map(a=>({professor:a.professor,sala:"",turma:a.turma,componente:a.componente,horario:a.dia+" "+a.inicio+"–"+a.fim,dia:a.dia,inicio:a.inicio,fim:a.fim,turno:a.turno}));
+    renderizar();
     if(!aulas.length)throw new Error("Os PDFs foram enviados, mas não consegui reconhecer as células de turma/professor. A grade não foi alterada.");
     mostrarGradeConvertida(aulas);
     if(estadoConversao)estadoConversao.textContent="Conversão concluída: "+aulas.length+" aulas identificadas. A grade foi salva para exibição automática por dia e horário.";
