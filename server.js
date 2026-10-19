@@ -66,6 +66,7 @@ const caminhoConfigImagens = path.join(dadosPath, "imagem.json");
 const horariosPath = path.join(dadosPath, "horarios");
 const caminhoHorarios = path.join(dadosPath, "horarios.json");
 const caminhoPdfHorarios = path.join(horariosPath, "horarios-professores.pdf");
+const caminhoDocumentosHorarios = path.join(horariosPath, "documentos.json");
 
 fs.mkdirSync(videosPath, { recursive: true });
 fs.mkdirSync(imagensPath, { recursive: true });
@@ -267,7 +268,30 @@ app.get("/api/horarios", (req, res) => {
     }
 });
 
-app.post("/api/horarios/pdf", protegerApi, uploadPdfHorarios.single("pdf"), (req, res) => {
+function lerDocumentosHorarios() {
+    if (!fs.existsSync(caminhoDocumentosHorarios)) return { matutino: null, vespertino: null, individual: null, atualizadoEm: null };
+    try {
+        const dados = JSON.parse(fs.readFileSync(caminhoDocumentosHorarios, "utf8"));
+        return { matutino: dados.matutino || null, vespertino: dados.vespertino || null, individual: dados.individual || null, atualizadoEm: dados.atualizadoEm || null };
+    } catch { return { matutino: null, vespertino: null, individual: null, atualizadoEm: null }; }
+}
+
+app.get("/api/horarios/documentos", protegerApi, (req, res) => res.json(lerDocumentosHorarios()));
+
+app.post("/api/horarios/pdf/:tipo", protegerApi, (req, res, next) => {
+    if (!["matutino", "vespertino", "individual"].includes(req.params.tipo)) return res.status(400).json({ erro: "Tipo de relatório inválido." });
+    next();
+}, uploadPdfHorarios.single("pdf"), (req, res) => {
+    if (!req.file) return res.status(400).json({ erro: "Selecione um arquivo PDF." });
+    const documentos = lerDocumentosHorarios();
+    documentos[req.params.tipo] = req.file.filename;
+    documentos.atualizadoEm = new Date().toISOString();
+    fs.writeFileSync(caminhoDocumentosHorarios, JSON.stringify(documentos, null, 2), "utf8");
+    res.json({ sucesso: true, tipo: req.params.tipo, arquivo: req.file.filename, documentos });
+});
+
+// Compatibilidade com a rota antiga.
+ app.post("/api/horarios/pdf", protegerApi, uploadPdfHorarios.single("pdf"), (req, res) => {
     if (!req.file) return res.status(400).json({ erro: "Selecione um arquivo PDF." });
     res.json({ sucesso: true, arquivo: req.file.filename });
 });
