@@ -16,23 +16,19 @@
     <header>
       <p class="sobretitulo">TOTEM ESCOLAR · ADMINISTRAÇÃO</p>
       <h1>Horários dos professores</h1>
-      <p>Envie os três relatórios oficiais. Abaixo você verá o status dos arquivos e, após a leitura, uma prévia dos dados identificados.</p>
+      <p>Envie o relatório individual dos professores. Ele será a única fonte usada para montar a grade.</p>
     </header>
     <section class="cartao">
-      <h2>1. Importar os três relatórios PDF</h2>
-      <p>Selecione um arquivo para cada tipo de relatório. Os arquivos ficam separados no ambiente de desenvolvimento.</p>
+      <h2>1. Importar relatório individual</h2>
+      <p>Somente este relatório será usado para montar a grade. Os relatórios matutino e vespertino não participam mais da conversão.</p>
       <form id="pdfForm">
-        <label for="pdfMatutino">Relatório de turmas — Matutino</label>
-        <input id="pdfMatutino" type="file" accept="application/pdf,.pdf" required>
-        <label for="pdfVespertino">Relatório de turmas — Vespertino</label>
-        <input id="pdfVespertino" type="file" accept="application/pdf,.pdf" required>
-        <label for="pdfIndividual">Relatório individual dos professores</label>
+        <label for="pdfIndividual">Relatório individual dos professores (PDF)</label>
         <input id="pdfIndividual" type="file" accept="application/pdf,.pdf" required>
-        <button id="enviarPdfs" type="submit">Enviar os 3 PDFs</button>
+        <button id="enviarPdfs" type="submit">Ler relatório individual</button>
       </form>
       <p id="statusPdf" role="status"></p>
       <section id="painelConversao" class="painel-conversao" aria-live="polite"><h3>Prévia da conversão dos horários</h3><p id="estadoConversao">Envie os três PDFs para iniciar a leitura e exibir aqui os dados identificados.</p><div id="previsualizacaoLeitura"></div></section>
-      <ul id="estadoDocumentos" class="ajuda"><li>Matutino: ainda não enviado</li><li>Vespertino: ainda não enviado</li><li>Individual: ainda não enviado</li></ul>
+      <ul id="estadoDocumentos" class="ajuda"><li>Relatório individual: ainda não enviado</li></ul>
       <p class="ajuda">A leitura experimental não publica horários. Confira os resultados antes de qualquer publicação.</p>
     </section>
     <section class="cartao">
