@@ -142,7 +142,7 @@ function converterRelatorioIndividual(resultado){
       const linhasPeriodos=grupos.filter(g=>g.itens.some(i=>/^0?[1-6][º°o]?$/.test(i.texto))).map(g=>({y:g.y,itens:g.itens}));
       let professor="";
       const candidatas=grupos.filter(g=>g.y>cab.y&&g.y-cab.y<=38).flatMap(g=>g.itens)
-        .filter(i=>i.x>=limiteEsq-4&&i.x<limiteDir&&i.y>cab.y&&
+        .filter(i=>i.x>=cab.x-55&&i.x<limiteDir&&i.y>cab.y&&
           !/^(Hor|Seg|Ter|Qua|Qui|Sex)$/i.test(i.texto)&&!/^(0?[1-6][º°o]?)$/.test(i.texto));
       if(candidatas.length){
         const yNome=Math.min(...candidatas.map(i=>i.y));
