@@ -1,0 +1,49 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Horários dos professores | Totem Escolar</title>
+  <link rel="stylesheet" href="/admin/horarios.css">
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+</head>
+<body>
+  <main class="painel">
+    <a class="voltar" href="/admin/">← Voltar ao painel</a>
+    <header>
+      <p class="sobretitulo">TOTEM ESCOLAR · ADMINISTRAÇÃO</p>
+      <h1>Horários dos professores</h1>
+      <p>Envie o PDF oficial, revise os dados extraídos e publique a versão conferida.</p>
+    </header>
+    <section class="cartao">
+      <h2>1. Importar PDF</h2>
+      <form id="pdfForm">
+        <label for="pdfInput">Arquivo oficial de horários (PDF)</label>
+        <input id="pdfInput" type="file" accept="application/pdf,.pdf" required>
+        <button type="submit">Ler PDF e preparar edição</button>
+      </form>
+      <p id="statusPdf" role="status"></p>
+      <p class="ajuda">A leitura automática depende da estrutura do PDF. Confira todos os campos antes de publicar. PDFs escaneados como imagem podem exigir OCR.</p>
+    </section>
+    <section class="cartao">
+      <div class="titulo-linha">
+        <div><h2>2. Revisar os registros</h2><p>Os campos são editáveis. Use uma linha para cada aula/atribuição.</p></div>
+        <button id="adicionarLinha" class="secundario" type="button">+ Adicionar linha</button>
+      </div>
+      <div class="tabela-wrap">
+        <table>
+          <thead><tr><th>Professor</th><th>Sala</th><th>Turma</th><th>Componente</th><th>Horário letivo</th><th></th></tr></thead>
+          <tbody id="linhasHorarios"><tr><td colspan="6" class="vazio">Envie um PDF ou adicione uma linha manualmente.</td></tr></tbody>
+        </table>
+      </div>
+      <button id="salvarHorarios" type="button">Publicar horários revisados</button>
+      <p id="statusSalvar" role="status"></p>
+    </section>
+    <section class="cartao">
+      <h2>Última versão publicada</h2>
+      <p id="estadoAtual">Carregando...</p>
+    </section>
+  </main>
+  <script src="/admin/horarios.js"></script>
+</body>
+</html>
