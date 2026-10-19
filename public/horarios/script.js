@@ -38,11 +38,7 @@ function montarCartao(nome,etiqueta){
 }
 function renderizar(){
  lista.innerHTML="";
- if(!professores.length){
-  const p=document.createElement("p");p.className="vazio";
-  p.textContent="Os horários ainda estão sendo organizados a partir dos relatórios oficiais.";
-  lista.appendChild(p);return;
- }
+ if(!professores.length){const p=document.createElement("p");p.className="vazio";p.textContent="Os horários estão sendo organizados a partir dos relatórios oficiais.";lista.appendChild(p);return;}
  professores.forEach(p=>lista.appendChild(montarCartao(p.professor,[p.componente,p.turma].filter(Boolean).join(" · "))));
 }
 async function carregar(){
