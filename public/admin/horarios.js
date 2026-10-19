@@ -123,27 +123,32 @@ function converterRelatorioIndividual(resultado){
   const aulas=[];
   const ehRotuloAula=t=>/^0?[1-6][º°o]?$/i.test(String(t).trim());
   const ehCabecalho=l=>l.itens.some(i=>/^Hor$/i.test(i.texto))&&dias.filter(d=>l.itens.some(i=>i.texto===d)).length>=4;
-  const ehNomeProfessor=t=>/^[A-ZÁÉÍÓÚÂÊÔÃÕÇ][A-ZÁÉÍÓÚÂÊÔÃÕÇ .'-]{2,}$/.test(String(t).trim())&&!ehRotuloAula(t)&&!/^(HOR|SEG|TER|QUA|QUI|SEX|H\/A|ROBO)$/i.test(String(t).trim());
+  const ehNomeProfessor=t=>/^[A-ZÁÉÍÓÚÂÊÔÃÕÇ][A-ZÁÉÍÓÚÂÊÔÃÕÇ .'-]{2,}$/.test(String(t).trim())&&!ehRotuloAula(t)&&!/^(HOR|SEG|TER|QUA|QUI|SEX|H\/A|ROBO|COLÉGIO|ESTADUAL|RELATÓRIO|PROFESSORES|INDIVIDUAL)$/i.test(String(t).trim());
   resultado.paginasItens.forEach((grupos,pagina)=>{
     const linhas=grupos.map(g=>({y:g.y,itens:g.itens.slice().sort((a,b)=>a.x-b.x)})).sort((a,b)=>b.y-a.y);
     const cabecalhos=[];
     linhas.forEach((linha,idx)=>{
       if(!ehCabecalho(linha))return;
       const hors=linha.itens.filter(i=>/^Hor$/i.test(i.texto)).sort((a,b)=>a.x-b.x);
-      const linhasAnteriores=linhas.slice(Math.max(0,idx-3),idx);
-      const linhaNomes=linhasAnteriores.map(l=>({y:l.y,nomes:l.itens.filter(i=>ehNomeProfessor(i.texto)).sort((a,b)=>a.x-b.x)})).filter(l=>l.nomes.length);
-      const nomes=linhaNomes.sort((a,b)=>b.nomes.length-a.nomes.length||Math.abs(a.y-linha.y)-Math.abs(b.y-linha.y))[0]?.nomes||[];
       hors.forEach((hor,hi)=>{
         const proxHor=hors[hi+1]?.x??Infinity;
-        const blocoFim=Number.isFinite(proxHor)?proxHor:hor.x+240;
+        const blocoFim=Number.isFinite(proxHor)?proxHor:hor.x+260;
         const diasX=dias.map(d=>{const item=linha.itens.find(i=>i.texto===d&&i.x>hor.x&&i.x<blocoFim);return item?item.x:null;});
-        const nome=nomes[hi]?.texto.trim()||"";
-        if(diasX.filter(x=>x!==null).length>=4&&nome)cabecalhos.push({y:linha.y,horX:hor.x,limiteX:blocoFim,diasX,nome});
+        if(diasX.filter(x=>x!==null).length<4)return;
+        const nomeCandidatos=[];
+        linhas.slice(Math.max(0,idx-5),idx).forEach(l=>{
+          l.itens.forEach(item=>{
+            if(item.x>=hor.x-25&&item.x<blocoFim&&ehNomeProfessor(item.texto)){
+              nomeCandidatos.push({texto:item.texto.trim(),x:item.x,y:l.y,distancia:Math.abs(l.y-linha.y)});
+            }
+          });
+        });
+        const nomeCandidato=nomeCandidatos.sort((a,b)=>a.distancia-b.distancia||Math.abs(a.x-hor.x)-Math.abs(b.x-hor.x))[0];
+        if(nomeCandidato)cabecalhos.push({y:linha.y,horX:hor.x,limiteX:blocoFim,diasX,nome:nomeCandidato.texto});
       });
     });
     cabecalhos.forEach(cab=>{
-      const cabecalhoSeguinte=linhas.filter(l=>l.y<cab.y&&ehCabecalho(l)).sort((a,b)=>b.y-a.y)[0];
-      const limiteY=cabecalhoSeguinte?cabecalhoSeguinte.y:-Infinity;
+      const limiteY=linhas.filter(l=>l.y<cab.y&&ehCabecalho(l)).sort((a,b)=>b.y-a.y)[0]?.y??-Infinity;
       const ocorrencias={};
       linhas.filter(l=>l.y<cab.y&&l.y>limiteY).forEach(linha=>{
         const rotulo=linha.itens.find(i=>i.x>=cab.horX-5&&i.x<cab.limiteX&&ehRotuloAula(i.texto));
