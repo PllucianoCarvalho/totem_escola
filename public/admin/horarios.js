@@ -175,7 +175,7 @@ function converterRelatorioIndividual(resultado){
 function mostrarGradeConvertida(aulas){
   previsualizacaoLeitura.innerHTML="";
   const sec=document.createElement("section");const h=document.createElement("h3");h.textContent="Grade extraída do relatório individual";sec.appendChild(h);
-  const resumo=document.createElement("p");resumo.textContent=aulas.length+" aulas com professor, componente e turma identificados.";sec.appendChild(resumo);
+  const resumo=document.createElement("p");resumo.textContent=aulas.length+" aulas identificadas; o componente curricular precisa ser confirmado.";sec.appendChild(resumo);
   const details=document.createElement("details");details.open=true;const sum=document.createElement("summary");sum.textContent="Conferir grade convertida";details.appendChild(sum);
   const table=document.createElement("table");const thead=document.createElement("thead");thead.innerHTML="<tr><th>Dia</th><th>Horário</th><th>Turma</th><th>Componente</th><th>Professor</th></tr>";table.appendChild(thead);const tbody=document.createElement("tbody");
   aulas.slice(0,300).forEach(a=>{const tr=document.createElement("tr");[a.dia,a.inicio+"–"+a.fim,a.turma,a.componente,a.professor].forEach(v=>{const td=document.createElement("td");td.textContent=v;tr.appendChild(td);});tbody.appendChild(tr);});table.appendChild(tbody);details.appendChild(table);sec.appendChild(details);previsualizacaoLeitura.appendChild(sec);
@@ -216,7 +216,9 @@ document.getElementById("adicionarLinha").addEventListener("click",()=>{registro
 document.getElementById("salvarHorarios").addEventListener("click",async()=>{
   statusSalvar.textContent="Salvando...";
   try{
-    const resposta=await fetch("/api/horarios",{method:"PUT",headers:{"Content-Type":"application/json"},body:JSON.stringify({professores:registros.map(r=>({professor:r.professor,turma:r.turma,componente:r.componente,horario:r.horario,dia:r.dia||"",inicio:r.inicio||"",fim:r.fim||"",turno:r.turno||"",origem:r.origem||""})),aulas:registros.map(r=>({professor:r.professor,turma:r.turma,componente:r.componente,horario:r.horario,dia:r.dia||"",inicio:r.inicio||"",fim:r.fim||"",turno:r.turno||"",origem:r.origem||""})),pdf:pdfSelecionado})});
+    const prepararRegistro=r=>{const m=String(r.horario||"").match(/^(segunda-feira|terça-feira|quarta-feira|quinta-feira|sexta-feira|sábado|domingo)\\s+(\\d{2}:\\d{2})\\s*[–-]\\s*(\\d{2}:\\d{2})$/i);return {professor:r.professor,turma:r.turma,componente:r.componente,horario:r.horario,dia:m?m[1]:(r.dia||""),inicio:m?m[2]:(r.inicio||""),fim:m?m[3]:(r.fim||""),turno:(m?Number(m[2].slice(0,2)):Number(String(r.inicio||"00").slice(0,2)))<12?"manhã":"tarde",origem:r.origem||""};};
+    const registrosProntos=registros.map(prepararRegistro);
+    const resposta=await fetch("/api/horarios",{method:"PUT",headers:{"Content-Type":"application/json"},body:JSON.stringify({professores:registrosProntos,aulas:registrosProntos,pdf:pdfSelecionado})});
     const dados=await resposta.json();if(!resposta.ok)throw new Error(dados.erro||"Falha ao salvar.");
     statusSalvar.textContent="Horários publicados. Registros: "+dados.total+".";
     carregarAtual();
