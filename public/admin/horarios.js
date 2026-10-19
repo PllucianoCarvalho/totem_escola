@@ -80,33 +80,36 @@ function converterGradeTurmas(tipo,resultado){
   const intervalos={"07:50":["07:50","08:40"],"08:40":["08:40","09:30"],"09:40":["09:40","10:30"],"10:30":["10:30","11:20"],"11:20":["11:20","12:10"],"13:05":["13:05","13:55"],"13:55":["13:55","14:45"],"14:55":["14:55","15:45"],"15:45":["15:45","16:35"],"16:35":["16:35","17:25"]};
   const saida=[];
   resultado.paginasItens.forEach((grupos,pagina)=>{
-    let cabecalhos=[];
-    for(const g of grupos){const encontrados=g.itens.filter(i=>/^(?:6|7|8|9|1|2|3)[A-E]$/.test(i.texto)).map(i=>({turma:i.texto,x:i.x}));if(encontrados.length){cabecalhos=encontrados.sort((a,b)=>a.x-b.x);break;}}
+    const cabecalhos=[];
+    grupos.forEach(g=>g.itens.forEach(item=>{const turma=item.texto.replace(/\s+/g,"").toUpperCase();if(/^(6[A-C]|7[A-C]|8[A-C]|9[A-E]|[123][A-D])$/.test(turma)&&!cabecalhos.some(c=>c.turma===turma))cabecalhos.push({turma,x:item.x});}));
+    cabecalhos.sort((a,b)=>a.x-b.x);
     if(!cabecalhos.length)return;
-    const linhas=grupos.map(g=>{const itens=g.itens;const time=itens.find(i=>/^\\d{2}:\\d{2}$/.test(i.texto));const diaItem=itens.find(i=>dias[i.texto]);return {itens,time:time?.texto||"",dia:diaItem?dias[diaItem.texto]:""};});
-    linhas.forEach((linha,i)=>{
-      if(!linha.dia)return;
-      const indices=[i-1,i,i+1,i+2,i+3];
-      indices.forEach(idx=>{
-        if(idx<0||idx>=linhas.length)return;
-        const row=linhas[idx];if(!row.time||!intervalos[row.time])return;
+    const linhas=grupos.map(g=>{const itens=g.itens;const timeItem=itens.find(i=>/^\d{2}:\d{2}$/.test(i.texto));const diaItem=itens.find(i=>dias[i.texto]);return {itens,time:timeItem?timeItem.texto:"",dia:diaItem?dias[diaItem.texto]:""};});
+    for(let i=0;i<linhas.length;i++){
+      if(!linhas[i].dia)continue;
+      const dia=linhas[i].dia;let inicio=i-1;
+      while(inicio>=0&&linhas[inicio].time&& !linhas[inicio].dia)inicio--;
+      inicio=Math.max(i-1,inicio+1);
+      let fim=i+1;while(fim<linhas.length&&!linhas[fim].dia)fim++;
+      for(let j=inicio;j<fim;j++){
+        const row=linhas[j];if(!row.time||!intervalos[row.time])continue;
         const celulas=cabecalhos.map(c=>({turma:c.turma,x:c.x,textos:[]}));
         row.itens.forEach(item=>{
-          if(item.texto===row.time||dias[item.texto]||/^(?:6|7|8|9|1|2|3)[A-E]$/.test(item.texto)||/^\\d{2}:\\d{2}$/.test(item.texto))return;
-          if(item.x<cabecalhos[0].x-95)return;
+          if(item.texto===row.time||dias[item.texto]||/^(6[A-C]|7[A-C]|8[A-C]|9[A-E]|[123][A-D])$/.test(item.texto)||/^\d{2}:\d{2}$/.test(item.texto))return;
+          if(item.x<cabecalhos[0].x-100)return;
           let melhor=celulas[0];for(const cel of celulas){if(Math.abs(item.x-cel.x)<Math.abs(item.x-melhor.x))melhor=cel;}
           melhor.textos.push({x:item.x,texto:item.texto});
         });
         celulas.forEach(c=>{
-          const texto=c.textos.sort((a,b)=>a.x-b.x).map(x=>x.texto).join(" ").replace(/\\s+/g," ").trim();
-          if(!texto||/^[-–—]+$/.test(texto))return;
-          const m=texto.match(/^(.+?)\\s*\\(([^()]+)\\)\\s*$/);if(!m)return;
+          const texto=c.textos.sort((x,y)=>x.x-y.x).map(x=>x.texto).join(" ").replace(/\s+/g," ").trim();
+          if(!texto||/^[-–—]+$/.test(texto)||/^RC\b/i.test(texto))return;
+          const m=texto.match(/^(.+?)\s*\(([^()]+)\)\s*$/);if(!m)return;
           const componente=m[1].trim(),professor=m[2].trim();
-          if(!componente||!professor||/^RC\\b/i.test(componente))return;
-          saida.push({dia:linha.dia,inicio:intervalos[row.time][0],fim:intervalos[row.time][1],turma:c.turma,componente,professor,turno:tipo==="matutino"?"manhã":"tarde",origem:tipo,pagina:pagina+1});
+          if(!componente||!professor)return;
+          saida.push({dia,inicio:intervalos[row.time][0],fim:intervalos[row.time][1],turma:c.turma,componente,professor,turno:tipo==="matutino"?"manhã":"tarde",origem:tipo,pagina:pagina+1});
         });
-      });
-    });
+      }
+    }
   });
   const unicos=new Map();saida.forEach(a=>unicos.set([a.dia,a.inicio,a.turma,a.professor,a.componente].join("|"),a));return [...unicos.values()];
 }
