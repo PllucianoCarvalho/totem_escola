@@ -60,7 +60,8 @@ function renderizarConsultaGrade(){
   resultadoFiltros.textContent=filtradas.length+" de "+aulasPublicadas.length+" aula(s) exibida(s).";
 }
 function prepararFiltroDias(){
-  const dias=[...new Set(aulasPublicadas.map(a=>a.dia).filter(Boolean))].sort((a,b)=>["segunda-feira","terça-feira","quarta-feira","quinta-feira","sexta-feira","sábado","domingo"].indexOf(normalizarFiltro(a))-["segunda-feira","terça-feira","quarta-feira","quinta-feira","sexta-feira","sábado","domingo"].indexOf(normalizarFiltro(b)));
+  const ordemDias=["segunda-feira","terça-feira","quarta-feira","quinta-feira","sexta-feira","sábado","domingo"];
+  const dias=[...new Set(aulasPublicadas.map(a=>a.dia).filter(Boolean))].sort((a,b)=>ordemDias.indexOf(normalizarFiltro(a))-ordemDias.indexOf(normalizarFiltro(b)));
   filtroDia.innerHTML='<option value="">Todos os dias</option>';
   dias.forEach(dia=>{const option=document.createElement("option");option.value=dia;option.textContent=dia;filtroDia.appendChild(option);});
   renderizarConsultaGrade();
