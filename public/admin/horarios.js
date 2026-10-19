@@ -1,5 +1,8 @@
 const pdfForm=document.getElementById("pdfForm");
-const pdfInput=document.getElementById("pdfInput");
+const pdfMatutino=document.getElementById("pdfMatutino");
+const pdfVespertino=document.getElementById("pdfVespertino");
+const pdfIndividual=document.getElementById("pdfIndividual");
+const estadoDocumentos=document.getElementById("estadoDocumentos");
 const statusPdf=document.getElementById("statusPdf");
 const linhas=document.getElementById("linhasHorarios");
 const statusSalvar=document.getElementById("statusSalvar");
@@ -7,6 +10,7 @@ const estadoAtual=document.getElementById("estadoAtual");
 if(window.pdfjsLib)pdfjsLib.GlobalWorkerOptions.workerSrc="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js";
 let registros=[];
 let pdfSelecionado=null;
+let documentosEnviados={matutino:null,vespertino:null,individual:null};
 
 function renderizar(){
   linhas.innerHTML="";
@@ -50,22 +54,34 @@ async function extrairTexto(file){
   return linhasTexto.filter(l=>l.replace(/\s/g,"").length>2);
 }
 pdfForm.addEventListener("submit",async e=>{
-  e.preventDefault();const file=pdfInput.files[0];if(!file)return;
-  if(!file.name.toLowerCase().endsWith(".pdf")){statusPdf.textContent="Selecione um arquivo PDF.";return;}
-  statusPdf.textContent="Lendo o PDF...";
+  e.preventDefault();
+  const arquivos={matutino:pdfMatutino.files[0],vespertino:pdfVespertino.files[0],individual:pdfIndividual.files[0]};
+  const faltantes=Object.entries(arquivos).filter(([tipo,file])=>!file).map(([tipo])=>tipo);
+  if(faltantes.length){statusPdf.textContent="Selecione os três arquivos: Matutino, Vespertino e Individual.";return;}
+  for(const [tipo,file] of Object.entries(arquivos)){if(!file.name.toLowerCase().endsWith(".pdf")){statusPdf.textContent="O arquivo "+tipo+" não parece ser um PDF.";return;}}
+  const botao=document.getElementById("enviarPdfs");botao.disabled=true;statusPdf.textContent="Enviando os relatórios...";
   try{
-    const texto=await extrairTexto(file);
-    if(!texto.length)throw new Error("Não encontrei texto selecionável. Este PDF pode ser escaneado; será necessário OCR.");
-    const linhasUtil=texto.filter(l=>!/(horário|horario|professor|professores|turma|componente curricular)/i.test(l)||l.split(/\s{2,}/).length>2);
-    registros=linhasUtil.map(interpretarLinha);
-    renderizar();
-    const formData=new FormData();formData.append("pdf",file);
-    const resposta=await fetch("/api/horarios/pdf",{method:"POST",body:formData});
-    const dados=await resposta.json();if(!resposta.ok)throw new Error(dados.erro||"Falha ao guardar o PDF.");
-    pdfSelecionado=dados.arquivo;
-    statusPdf.textContent="PDF lido e armazenado. Revise cuidadosamente os campos antes de publicar.";
-  }catch(err){statusPdf.textContent="Não foi possível importar: "+err.message;}
+    for(const [tipo,file] of Object.entries(arquivos)){
+      statusPdf.textContent="Enviando "+tipo+"...";
+      const formData=new FormData();formData.append("pdf",file);
+      const resposta=await fetch("/api/horarios/pdf/"+tipo,{method:"POST",body:formData});
+      const dados=await resposta.json();if(!resposta.ok)throw new Error(dados.erro||"Falha ao enviar "+tipo+".");
+      documentosEnviados[tipo]=dados.arquivo;
+    }
+    statusPdf.textContent="Os três PDFs foram enviados e armazenados separadamente. Os horários ainda precisam ser extraídos e conferidos.";
+    atualizarEstadoDocumentos();
+  }catch(err){statusPdf.textContent="Falha no envio: "+err.message+". Os arquivos já enviados permanecem armazenados; reenvie os três para garantir que estejam atualizados.";}
+  finally{botao.disabled=false;}
 });
+function atualizarEstadoDocumentos(){
+  const nomes={matutino:"Matutino",vespertino:"Vespertino",individual:"Individual"};
+  estadoDocumentos.innerHTML="";
+  Object.entries(nomes).forEach(([tipo,nome])=>{const li=document.createElement("li");li.textContent=nome+": "+(documentosEnviados[tipo]?"enviado ("+documentosEnviados[tipo]+")":"ainda não enviado");estadoDocumentos.appendChild(li);});
+}
+async function carregarDocumentos(){
+  try{const r=await fetch("/api/horarios/documentos");if(!r.ok)return;const d=await r.json();documentosEnviados={matutino:d.matutino,vespertino:d.vespertino,individual:d.individual};atualizarEstadoDocumentos();}
+  catch{}
+}
 document.getElementById("adicionarLinha").addEventListener("click",()=>{registros.push({professor:"",sala:"",turma:"",componente:"",horario:""});renderizar();});
 document.getElementById("salvarHorarios").addEventListener("click",async()=>{
   statusSalvar.textContent="Salvando...";
@@ -74,6 +90,7 @@ document.getElementById("salvarHorarios").addEventListener("click",async()=>{
     const dados=await resposta.json();if(!resposta.ok)throw new Error(dados.erro||"Falha ao salvar.");
     statusSalvar.textContent="Horários publicados. Registros: "+dados.total+".";
     carregarAtual();
+carregarDocumentos();
   }catch(err){statusSalvar.textContent="Erro: "+err.message;}
 });
 async function carregarAtual(){
