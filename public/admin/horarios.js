@@ -160,7 +160,7 @@ function converterRelatorioIndividual(resultado){
           if(!cel||/^-{2,}$/.test(cel)||/^H\/?A$/i.test(cel)||/^H\/A$/i.test(cel))return;
           const turma=(cel.match(/\b(?:[1-3][A-D]|[6-9][A-E])(?:\s*II)?\b/i)||[])[0];
           if(!turma)return;
-          aulas.push({dia:({"Seg":"Segunda-feira","Ter":"Terça-feira","Qua":"Quarta-feira","Qui":"Quinta-feira","Sex":"Sexta-feira"})[dia],inicio:slots[slotIndex][0],fim:slots[slotIndex][1],turma:turma.replace(/\s+/g," ").trim(),componente:"",professor:c.nome,turno:slotIndex<6?"manhã":"tarde",origem:"individual",pagina:pagina+1});
+          aulas.push({dia:({"Seg":"Segunda-feira","Ter":"Terça-feira","Qua":"Quarta-feira","Qui":"Quinta-feira","Sex":"Sexta-feira"})[dia],inicio:slots[slotIndex][0],fim:slots[slotIndex][1],turma:turma.replace(/\s+/g," ").trim(),componente:"A confirmar",professor:c.nome,turno:slotIndex<6?"manhã":"tarde",origem:"individual",pagina:pagina+1});
         });
       });
     });
@@ -192,8 +192,8 @@ pdfForm.addEventListener("submit",async e=>{
     renderizar();
     if(!aulas.length)throw new Error("O relatório foi enviado, mas a leitura automática não identificou aulas com segurança. A grade publicada anterior foi preservada.");
     mostrarGradeConvertida(aulas);
-    if(estadoConversao)estadoConversao.textContent="Leitura experimental: "+aulas.length+" aulas identificadas. Confira os registros antes de publicar.";
-    statusPdf.textContent="Relatório individual enviado. Foram identificadas "+aulas.length+" aulas; salvando a prévia para revisão...";
+    if(estadoConversao)estadoConversao.textContent="Leitura experimental: "+aulas.length+" aulas identificadas. O relatório individual informa turma e horário, mas não o componente curricular; esses campos precisam ser confirmados na revisão.";
+    statusPdf.textContent="Relatório individual enviado. Foram identificadas "+aulas.length+" aulas. O componente curricular não consta neste relatório e está marcado como A confirmar; revise antes de usar a grade.";
     const salvar=await fetch("/api/horarios/importar",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({aulas})});const salvo=await salvar.json();if(!salvar.ok)throw new Error(salvo.erro||"Não foi possível salvar a grade.");
     const totalDetectado=aulas.length;const total12h15=aulas.filter(a=>a.inicio==="12:15").length;statusPdf.textContent=salvo.total!==totalDetectado?"ATENÇÃO: "+totalDetectado+" identificadas, mas "+salvo.total+" aceitas. Diferença: "+(totalDetectado-salvo.total)+". Aulas iniciadas às 12:15 detectadas: "+total12h15+".":"Concluído: "+salvo.total+" aulas salvas; "+total12h15+" iniciadas às 12:15. Confira se os totais batem com os PDFs.";
     await carregarAtual();
