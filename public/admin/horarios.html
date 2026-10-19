@@ -19,8 +19,8 @@
       <p>Envie o relatório individual dos professores. Ele será a única fonte usada para montar a grade.</p>
     </header>
     <section class="cartao">
-      <h2>1. Importar os três relatórios</h2>
-      <p>Os relatórios matutino e vespertino são usados para reconstruir a grade de aulas. O relatório individual é enviado junto para conferência.</p>
+      <h2>1. Importar relatório individual</h2>
+      <p>Envie somente o relatório individual dos professores. A leitura considera todas as páginas e gera uma prévia para revisão antes da publicação.</p>
       <form id="pdfForm">
         <label for="pdfMatutino">Relatório de horários matutinos (PDF)</label>
         <input id="pdfMatutino" type="file" accept="application/pdf,.pdf" required>
@@ -28,10 +28,10 @@
         <input id="pdfVespertino" type="file" accept="application/pdf,.pdf" required>
         <label for="pdfIndividual">Relatório individual dos professores (PDF)</label>
         <input id="pdfIndividual" type="file" accept="application/pdf,.pdf" required>
-        <button id="enviarPdfs" type="submit">Ler os três relatórios</button>
+        <button id="enviarPdfs" type="submit">Ler relatório individual</button>
       </form>
       <p id="statusPdf" role="status"></p>
-      <section id="painelConversao" class="painel-conversao" aria-live="polite"><h3>Prévia da conversão dos horários</h3><p id="estadoConversao">Envie os três PDFs para iniciar a leitura e exibir aqui os dados identificados.</p><div id="previsualizacaoLeitura"></div></section>
+      <section id="painelConversao" class="painel-conversao" aria-live="polite"><h3>Prévia da conversão dos horários</h3><p id="estadoConversao">Envie o PDF individual para iniciar a leitura e exibir os dados identificados.</p><div id="previsualizacaoLeitura"></div></section>
       <ul id="estadoDocumentos" class="ajuda"><li>Relatório individual: ainda não enviado</li></ul>
       <p class="ajuda">A leitura é experimental e não publica automaticamente. Revise os dados e confirme o componente curricular antes de publicar.</p>
     </section>
