@@ -16,14 +16,20 @@
       <p>Envie o PDF oficial, revise os dados extraídos e publique a versão conferida.</p>
     </header>
     <section class="cartao">
-      <h2>1. Importar PDF</h2>
+      <h2>1. Importar os três relatórios PDF</h2>
+      <p>Selecione um arquivo para cada tipo de relatório. Os arquivos ficam separados no ambiente de desenvolvimento.</p>
       <form id="pdfForm">
-        <label for="pdfInput">Arquivo oficial de horários (PDF)</label>
-        <input id="pdfInput" type="file" accept="application/pdf,.pdf" required>
-        <button type="submit">Ler PDF e preparar edição</button>
+        <label for="pdfMatutino">Relatório de turmas — Matutino</label>
+        <input id="pdfMatutino" type="file" accept="application/pdf,.pdf" required>
+        <label for="pdfVespertino">Relatório de turmas — Vespertino</label>
+        <input id="pdfVespertino" type="file" accept="application/pdf,.pdf" required>
+        <label for="pdfIndividual">Relatório individual dos professores</label>
+        <input id="pdfIndividual" type="file" accept="application/pdf,.pdf" required>
+        <button id="enviarPdfs" type="submit">Enviar os 3 PDFs</button>
       </form>
       <p id="statusPdf" role="status"></p>
-      <p class="ajuda">A leitura automática depende da estrutura do PDF. Confira todos os campos antes de publicar. PDFs escaneados como imagem podem exigir OCR.</p>
+      <ul id="estadoDocumentos" class="ajuda"><li>Matutino: ainda não enviado</li><li>Vespertino: ainda não enviado</li><li>Individual: ainda não enviado</li></ul>
+      <p class="ajuda">Esta etapa armazena os três arquivos separadamente. A extração automática dos horários ainda será ajustada e conferida; não publique registros extraídos automaticamente sem revisão.</p>
     </section>
     <section class="cartao">
       <div class="titulo-linha">
