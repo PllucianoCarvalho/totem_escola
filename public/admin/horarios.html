@@ -19,15 +19,15 @@
       <p>Envie o relatório individual dos professores. Ele será a única fonte usada para montar a grade.</p>
     </header>
     <section class="cartao">
-      <h2>1. Importar relatório individual</h2>
-      <p>Somente este relatório será usado para montar a grade. Os relatórios matutino e vespertino não participam mais da conversão.</p>
+      <h2>1. Importar os três relatórios</h2>
+      <p>Os relatórios matutino e vespertino são usados para reconstruir a grade de aulas. O relatório individual é enviado junto para conferência.</p>
       <form id="pdfForm">
         <label for="pdfIndividual">Relatório individual dos professores (PDF)</label>
         <input id="pdfIndividual" type="file" accept="application/pdf,.pdf" required>
         <button id="enviarPdfs" type="submit">Ler relatório individual</button>
       </form>
       <p id="statusPdf" role="status"></p>
-      <section id="painelConversao" class="painel-conversao" aria-live="polite"><h3>Prévia da conversão dos horários</h3><p id="estadoConversao">Envie o relatório individual para iniciar a leitura e exibir aqui os dados identificados.</p><div id="previsualizacaoLeitura"></div></section>
+      <section id="painelConversao" class="painel-conversao" aria-live="polite"><h3>Prévia da conversão dos horários</h3><p id="estadoConversao">Envie os três PDFs para iniciar a leitura e exibir aqui os dados identificados.</p><div id="previsualizacaoLeitura"></div></section>
       <ul id="estadoDocumentos" class="ajuda"><li>Relatório individual: ainda não enviado</li></ul>
       <p class="ajuda">A leitura é experimental e não publica automaticamente. Revise os dados e confirme o componente curricular antes de publicar.</p>
     </section>
