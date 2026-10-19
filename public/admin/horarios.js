@@ -11,6 +11,7 @@ const statusSalvar=document.getElementById("statusSalvar");
 const estadoAtual=document.getElementById("estadoAtual");
 if(window.pdfjsLib)pdfjsLib.GlobalWorkerOptions.workerSrc="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js";
 let registros=[];
+let aulasPublicadas=[];
 let pdfSelecionado=null;
 let documentosEnviados={matutino:null,vespertino:null,individual:null};
 
@@ -29,6 +30,47 @@ function renderizar(){
     td.appendChild(btn);tr.appendChild(td);linhas.appendChild(tr);
   });
 }
+
+const filtroProfessor=document.getElementById("filtroProfessor");
+const filtroTurma=document.getElementById("filtroTurma");
+const filtroComponente=document.getElementById("filtroComponente");
+const filtroDia=document.getElementById("filtroDia");
+const resultadosGrade=document.getElementById("resultadosGrade");
+const resultadoFiltros=document.getElementById("resultadoFiltros");
+function normalizarFiltro(valor){return String(valor||"").normalize("NFD").replace(/[\\u0300-\\u036f]/g,"").toLocaleLowerCase("pt-BR").trim();}
+function renderizarConsultaGrade(){
+  if(!resultadosGrade)return;
+  const professor=normalizarFiltro(filtroProfessor.value),turma=normalizarFiltro(filtroTurma.value),componente=normalizarFiltro(filtroComponente.value),dia=filtroDia.value;
+  const filtradas=aulasPublicadas.filter(a=>
+    normalizarFiltro(a.professor).includes(professor)&&
+    normalizarFiltro(a.turma).includes(turma)&&
+    normalizarFiltro(a.componente).includes(componente)&&
+    (!dia||normalizarFiltro(a.dia)===normalizarFiltro(dia))
+  ).sort((a,b)=>String(a.dia||"").localeCompare(String(b.dia||""),"pt-BR")||String(a.inicio||"").localeCompare(String(b.inicio||""))||String(a.turma||"").localeCompare(String(b.turma||""),"pt-BR"));
+  resultadosGrade.innerHTML="";
+  if(!filtradas.length){
+    const tr=document.createElement("tr"),td=document.createElement("td");td.colSpan=6;td.className="vazio";td.textContent=aulasPublicadas.length?"Nenhuma aula corresponde aos filtros selecionados.":"Ainda não há grade de aulas publicada.";tr.appendChild(td);resultadosGrade.appendChild(tr);
+  }else{
+    filtradas.forEach(a=>{
+      const tr=document.createElement("tr");
+      [a.dia||"—",a.inicio&&a.fim?a.inicio+"–"+a.fim:(a.horario||"—"),a.turma||"—",a.componente||"—",a.professor||"—",a.turno||"—"].forEach(valor=>{const td=document.createElement("td");td.textContent=valor;tr.appendChild(td);});
+      resultadosGrade.appendChild(tr);
+    });
+  }
+  resultadoFiltros.textContent=filtradas.length+" de "+aulasPublicadas.length+" aula(s) exibida(s).";
+}
+function prepararFiltroDias(){
+  const dias=[...new Set(aulasPublicadas.map(a=>a.dia).filter(Boolean))].sort((a,b)=>["segunda-feira","terça-feira","quarta-feira","quinta-feira","sexta-feira","sábado","domingo"].indexOf(normalizarFiltro(a))-["segunda-feira","terça-feira","quarta-feira","quinta-feira","sexta-feira","sábado","domingo"].indexOf(normalizarFiltro(b)));
+  filtroDia.innerHTML='<option value="">Todos os dias</option>';
+  dias.forEach(dia=>{const option=document.createElement("option");option.value=dia;option.textContent=dia;filtroDia.appendChild(option);});
+  renderizarConsultaGrade();
+}
+[filtroProfessor,filtroTurma,filtroComponente].forEach(campo=>campo.addEventListener("input",renderizarConsultaGrade));
+filtroDia.addEventListener("change",renderizarConsultaGrade);
+document.getElementById("limparFiltros").addEventListener("click",()=>{
+  filtroProfessor.value="";filtroTurma.value="";filtroComponente.value="";filtroDia.value="";renderizarConsultaGrade();
+});
+
 function interpretarLinha(texto){
   const limpa=texto.replace(/\s+/g," ").trim();
   const turma=(limpa.match(/\b\d+\s*[º°o]?\s*[A-Z]\b/i)||[])[0]||"";
@@ -162,7 +204,7 @@ carregarDocumentos();
   }catch(err){statusSalvar.textContent="Erro: "+err.message;}
 });
 async function carregarAtual(){
-  try{const r=await fetch("/api/horarios");if(!r.ok)throw new Error();const d=await r.json();registros=d.professores||[];renderizar();estadoAtual.textContent=d.atualizadoEm?"Última publicação: "+new Date(d.atualizadoEm).toLocaleString("pt-BR")+" · "+registros.length+" registros.":"Ainda não há horários publicados.";}
+  try{const r=await fetch("/api/horarios");if(!r.ok)throw new Error();const d=await r.json();registros=d.professores||[];aulasPublicadas=Array.isArray(d.aulas)?d.aulas:[];renderizar();prepararFiltroDias();estadoAtual.textContent=d.atualizadoEm?"Última publicação: "+new Date(d.atualizadoEm).toLocaleString("pt-BR")+" · "+registros.length+" registros.":"Ainda não há horários publicados.";}
   catch{estadoAtual.textContent="Não foi possível consultar a versão publicada.";}
 }
 carregarAtual();
