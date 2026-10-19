@@ -139,10 +139,7 @@ function converterRelatorioIndividual(resultado){
     cabecalhos.sort((a,b)=>a.x-b.x);
     cabecalhos.forEach((cab,idx)=>{
       const limiteEsq=cab.x-8, limiteDir=cabecalhos[idx+1]?.x-8??Infinity;
-      const linhasPeriodos=grupos.map(g=>{
-        const item=g.itens.find(i=>/^0?[1-6][º°o]?$/.test(i.texto));
-        return item?{y:g.y,numero:parseInt(item.texto,10),itens:g.itens}:null;
-      }).filter(Boolean);
+      const linhasPeriodos=grupos.filter(g=>g.itens.some(i=>/^0?[1-6][º°o]?$/.test(i.texto))).map(g=>({y:g.y,itens:g.itens}));
       let professor="";
       const candidatas=grupos.filter(g=>g.y>cab.y&&g.y-cab.y<=38).flatMap(g=>g.itens)
         .filter(i=>i.x>=limiteEsq-4&&i.x<limiteDir&&i.y>cab.y&&
@@ -154,17 +151,19 @@ function converterRelatorioIndividual(resultado){
       }
       if(!professor) return;
       linhasPeriodos.forEach(linha=>{
-        if(linha.y>=cab.y||linha.numero<1||linha.numero>6)return;
-        const itemPeriodo=linha.itens.find(i=>/^0?[1-6][º°o]?$/.test(i.texto));
-        if(!itemPeriodo||itemPeriodo.x<limiteEsq-10||itemPeriodo.x>=limiteDir)return;
+        if(linha.y>=cab.y)return;
+        const itemPeriodo=linha.itens.find(i=>/^0?[1-6][º°o]?$/.test(i.texto)&&i.x>=limiteEsq-10&&i.x<limiteDir);
+        if(!itemPeriodo)return;
+        const numero=parseInt(itemPeriodo.texto,10);
+        if(numero<1||numero>6)return;
         cab.dias.forEach(col=>{
           const candidatos=linha.itens.filter(i=>i.x>=limiteEsq-2&&i.x<limiteDir&&Math.abs(i.x-col.x)<32&&i.texto!==itemPeriodo.texto);
           if(!candidatos.length)return;
           const celula=candidatos.sort((a,b)=>Math.abs(a.x-col.x)-Math.abs(b.x-col.x))[0];
           const turma=celula.texto.replace(/\s+/g," ").trim().toUpperCase();
           if(!turmaValida.test(turma))return;
-          const faixa=horarios[linha.numero-1];
-          aulas.push({dia:col.dia,inicio:faixa[0],fim:faixa[1],turma,componente:"A confirmar",professor,turno:"tarde",origem:"individual",pagina:pagina+1,periodo:linha.numero});
+          const faixa=horarios[numero-1];
+          aulas.push({dia:col.dia,inicio:faixa[0],fim:faixa[1],turma,componente:"A confirmar",professor,turno:"tarde",origem:"individual",pagina:pagina+1,periodo:numero});
         });
       });
     });
