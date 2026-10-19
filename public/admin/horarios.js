@@ -127,9 +127,10 @@ function converterRelatorioIndividual(resultado){
   resultado.paginasItens.forEach((grupos,pagina)=>{
     const cabecalhos=[];
     grupos.forEach(g=>{
-      const hor=g.itens.filter(i=>/^Hor$/i.test(i.texto));
-      hor.forEach(item=>{
-        const diasNaLinha=dias.map(d=>g.itens.find(i=>i.texto===d)).filter(Boolean);
+      const hor=g.itens.filter(i=>/^Hor$/i.test(i.texto)).sort((a,b)=>a.x-b.x);
+      hor.forEach((item,indice)=>{
+        const proximoX=hor[indice+1]?.x??Infinity;
+        const diasNaLinha=g.itens.filter(i=>dias.includes(i.texto)&&i.x>item.x&&i.x<proximoX);
         if(diasNaLinha.length>=4&&!cabecalhos.some(c=>Math.abs(c.x-item.x)<8&&Math.abs(c.y-g.y)<3)){
           cabecalhos.push({x:item.x,y:g.y,dias:diasNaLinha.map(i=>({dia:nomesDias[i.texto],x:i.x}))});
         }
