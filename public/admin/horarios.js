@@ -145,9 +145,10 @@ function converterRelatorioIndividual(resultado){
       const topo=cab.y;
       const base=indice===0?0:6;
       const limiteY=cabecalhos[indice+1]?cabecalhos[indice+1].y:-Infinity;
+      const limiteX=cabecalhos.filter(c=>Math.abs(c.y-cab.y)<=2&&c.horX>cab.horX).sort((a,b)=>a.horX-b.horX)[0]?.horX??Infinity;
       const vistos=new Set();
       linhas.filter(l=>l.y<topo&&l.y>limiteY).forEach(linha=>{
-        const rotulo=linha.itens.find(i=>i.x>=cab.horX-5&&ehRotuloAula(i.texto));
+        const rotulo=linha.itens.find(i=>i.x>=cab.horX-5&&i.x<limiteX&&ehRotuloAula(i.texto));
         if(!rotulo)return;
         const numero=Number(rotulo.texto.match(/\d+/)[0]);
         if(vistos.has(numero))return;
@@ -158,7 +159,7 @@ function converterRelatorioIndividual(resultado){
           const x=cab.diasX[di];
           if(x===null)return;
           const nextX=cab.diasX.slice(di+1).find(v=>v!==null);
-          const cel=linha.itens.filter(i=>i.x>=x-3&&(nextX===undefined||i.x<nextX-3)&&!ehRotuloAula(i.texto)&&!/^(Hor|Seg|Ter|Qua|Qui|Sex)$/i.test(i.texto)).map(i=>i.texto).join(" ").replace(/\s+/g," ").trim();
+          const cel=linha.itens.filter(i=>i.x>=x-3&&i.x<limiteX&&(nextX===undefined||i.x<nextX-3)&&!ehRotuloAula(i.texto)&&!/^(Hor|Seg|Ter|Qua|Qui|Sex)$/i.test(i.texto)).map(i=>i.texto).join(" ").replace(/\s+/g," ").trim();
           if(!cel||/^-{2,}$/.test(cel)||/^H\/?A$/i.test(cel))return;
           const turma=(cel.match(/\b(?:[1-3][A-D]|[6-9][A-E])(?:\s*II)?\b/i)||[])[0];
           if(!turma)return;
