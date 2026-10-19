@@ -6,6 +6,7 @@ const statusSalvar=document.getElementById("statusSalvar");
 const estadoAtual=document.getElementById("estadoAtual");
 if(window.pdfjsLib)pdfjsLib.GlobalWorkerOptions.workerSrc="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js";
 let registros=[];
+let pdfSelecionado=null;
 
 function renderizar(){
   linhas.innerHTML="";
@@ -61,6 +62,7 @@ pdfForm.addEventListener("submit",async e=>{
     const formData=new FormData();formData.append("pdf",file);
     const resposta=await fetch("/api/horarios/pdf",{method:"POST",body:formData});
     const dados=await resposta.json();if(!resposta.ok)throw new Error(dados.erro||"Falha ao guardar o PDF.");
+    pdfSelecionado=dados.arquivo;
     statusPdf.textContent="PDF lido e armazenado. Revise cuidadosamente os campos antes de publicar.";
   }catch(err){statusPdf.textContent="Não foi possível importar: "+err.message;}
 });
@@ -68,7 +70,7 @@ document.getElementById("adicionarLinha").addEventListener("click",()=>{registro
 document.getElementById("salvarHorarios").addEventListener("click",async()=>{
   statusSalvar.textContent="Salvando...";
   try{
-    const resposta=await fetch("/api/horarios",{method:"PUT",headers:{"Content-Type":"application/json"},body:JSON.stringify({professores:registros})});
+    const resposta=await fetch("/api/horarios",{method:"PUT",headers:{"Content-Type":"application/json"},body:JSON.stringify({professores:registros,pdf:pdfSelecionado})});
     const dados=await resposta.json();if(!resposta.ok)throw new Error(dados.erro||"Falha ao salvar.");
     statusSalvar.textContent="Horários publicados. Registros: "+dados.total+".";
     carregarAtual();
