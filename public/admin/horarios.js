@@ -15,10 +15,10 @@ let documentosEnviados={individual:null};
 
 function renderizar(){
   linhas.innerHTML="";
-  if(!registros.length){linhas.innerHTML='<tr><td colspan="6" class="vazio">Nenhum registro. Importe um PDF ou adicione uma linha.</td></tr>';return;}
+  if(!registros.length){linhas.innerHTML='<tr><td colspan="5" class="vazio">Nenhum registro. Importe um PDF ou adicione uma linha.</td></tr>';return;}
   registros.forEach((r,i)=>{
     const tr=document.createElement("tr");
-    [["professor","Professor"],["sala","Sala"],["turma","Turma"],["componente","Componente"],["horario","Horário"]].forEach(([key,label])=>{
+    [["professor","Professor"],["turma","Turma"],["componente","Componente"],["horario","Horário letivo"]].forEach(([key,label])=>{
       const td=document.createElement("td"),input=document.createElement("input");
       input.value=r[key]||"";input.placeholder=label;input.setAttribute("aria-label",label);
       input.addEventListener("input",()=>r[key]=input.value);td.appendChild(input);tr.appendChild(td);
@@ -190,17 +190,15 @@ pdfForm.addEventListener("submit",async e=>{
     const formData=new FormData();formData.append("pdf",arquivo);
     const resposta=await fetch("/api/horarios/pdf/individual",{method:"POST",body:formData});
     const dados=await resposta.json();if(!resposta.ok)throw new Error(dados.erro||"Falha ao enviar o relatório individual.");
-    documentosEnviados={individual:dados.arquivo};atualizarEstadoDocumentos();
+    documentosEnviados={individual:dados.arquivo};pdfSelecionado=dados.arquivo;atualizarEstadoDocumentos();
     const aulas=converterRelatorioIndividual(leitura);
-    registros=aulas.map(a=>({professor:a.professor,sala:"",turma:a.turma,componente:a.componente,horario:a.dia+" "+a.inicio+"–"+a.fim,dia:a.dia,inicio:a.inicio,fim:a.fim,turno:a.turno}));
+    registros=aulas.map(a=>({professor:a.professor,turma:a.turma,componente:a.componente,horario:a.dia+" "+a.inicio+"–"+a.fim,dia:a.dia,inicio:a.inicio,fim:a.fim,turno:a.turno,origem:a.origem}));
     renderizar();
     if(!aulas.length)throw new Error("O relatório foi enviado, mas a leitura automática não identificou aulas com segurança. A grade publicada anterior foi preservada.");
     mostrarGradeConvertida(aulas);
     if(estadoConversao)estadoConversao.textContent="Leitura experimental: "+aulas.length+" aulas identificadas. O relatório individual informa turma e horário, mas não o componente curricular; esses campos precisam ser confirmados na revisão.";
     statusPdf.textContent="Relatório individual enviado. Foram identificadas "+aulas.length+" aulas. O componente curricular não consta neste relatório e está marcado como A confirmar; revise antes de usar a grade.";
-    const salvar=await fetch("/api/horarios/importar",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({aulas})});const salvo=await salvar.json();if(!salvar.ok)throw new Error(salvo.erro||"Não foi possível salvar a grade.");
-    const totalDetectado=aulas.length;const total12h15=aulas.filter(a=>a.inicio==="12:15").length;statusPdf.textContent=salvo.total!==totalDetectado?"ATENÇÃO: "+totalDetectado+" identificadas, mas "+salvo.total+" aceitas. Diferença: "+(totalDetectado-salvo.total)+". Aulas iniciadas às 12:15 detectadas: "+total12h15+".":"Concluído: "+salvo.total+" aulas salvas; "+total12h15+" iniciadas às 12:15. Confira se os totais batem com os PDFs.";
-    await carregarAtual();
+    statusPdf.textContent="Prévia pronta: "+aulas.length+" aulas identificadas. Nada foi publicado. Revise os registros, complete os componentes curriculares e clique em Publicar horários revisados.";
   }catch(err){statusPdf.textContent="Falha na conversão: "+err.message;if(estadoConversao)estadoConversao.textContent="Não foi possível concluir a conversão. Veja a mensagem acima; a grade publicada anterior foi preservada.";}
   finally{botao.disabled=false;}
 });
@@ -213,11 +211,11 @@ async function carregarDocumentos(){
   try{const r=await fetch("/api/horarios/documentos");if(!r.ok)return;const d=await r.json();documentosEnviados={individual:d.individual};atualizarEstadoDocumentos();}
   catch{}
 }
-document.getElementById("adicionarLinha").addEventListener("click",()=>{registros.push({professor:"",sala:"",turma:"",componente:"",horario:""});renderizar();});
+document.getElementById("adicionarLinha").addEventListener("click",()=>{registros.push({professor:"",turma:"",componente:"",horario:""});renderizar();});
 document.getElementById("salvarHorarios").addEventListener("click",async()=>{
   statusSalvar.textContent="Salvando...";
   try{
-    const resposta=await fetch("/api/horarios",{method:"PUT",headers:{"Content-Type":"application/json"},body:JSON.stringify({professores:registros,pdf:pdfSelecionado})});
+    const resposta=await fetch("/api/horarios",{method:"PUT",headers:{"Content-Type":"application/json"},body:JSON.stringify({professores:registros.map(r=>({professor:r.professor,turma:r.turma,componente:r.componente,horario:r.horario,dia:r.dia||"",inicio:r.inicio||"",fim:r.fim||"",turno:r.turno||"",origem:r.origem||""})),aulas:registros.map(r=>({professor:r.professor,turma:r.turma,componente:r.componente,horario:r.horario,dia:r.dia||"",inicio:r.inicio||"",fim:r.fim||"",turno:r.turno||"",origem:r.origem||""})),pdf:pdfSelecionado})});
     const dados=await resposta.json();if(!resposta.ok)throw new Error(dados.erro||"Falha ao salvar.");
     statusSalvar.textContent="Horários publicados. Registros: "+dados.total+".";
     carregarAtual();
