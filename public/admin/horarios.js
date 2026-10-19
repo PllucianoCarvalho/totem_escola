@@ -4,6 +4,7 @@ const pdfVespertino=document.getElementById("pdfVespertino");
 const pdfIndividual=document.getElementById("pdfIndividual");
 const estadoDocumentos=document.getElementById("estadoDocumentos");
 const previsualizacaoLeitura=document.getElementById("previsualizacaoLeitura");
+const estadoConversao=document.getElementById("estadoConversao");
 const statusPdf=document.getElementById("statusPdf");
 const linhas=document.getElementById("linhasHorarios");
 const statusSalvar=document.getElementById("statusSalvar");
@@ -118,7 +119,7 @@ pdfForm.addEventListener("submit",async e=>{
   const faltantes=Object.entries(arquivos).filter(([tipo,file])=>!file).map(([tipo])=>tipo);
   if(faltantes.length){statusPdf.textContent="Selecione os três arquivos: Matutino, Vespertino e Individual.";return;}
   for(const [tipo,file] of Object.entries(arquivos)){if(!file.name.toLowerCase().endsWith(".pdf")){statusPdf.textContent="O arquivo "+tipo+" não parece ser um PDF.";return;}}
-  const botao=document.getElementById("enviarPdfs");botao.disabled=true;previsualizacaoLeitura.innerHTML="";statusPdf.textContent="Lendo e enviando os relatórios...";
+  const botao=document.getElementById("enviarPdfs");botao.disabled=true;previsualizacaoLeitura.innerHTML="";statusPdf.textContent="Lendo e enviando os relatórios...";if(estadoConversao)estadoConversao.textContent="Processando os três relatórios. A prévia aparecerá abaixo quando a leitura terminar.";
   try{
     for(const [tipo,file] of Object.entries(arquivos)){
       statusPdf.textContent="Lendo "+tipo+"...";
@@ -132,8 +133,8 @@ pdfForm.addEventListener("submit",async e=>{
       const dados=await resposta.json();if(!resposta.ok)throw new Error(dados.erro||"Falha ao enviar "+tipo+".");
       documentosEnviados[tipo]=dados.arquivo;atualizarEstadoDocumentos();
     }
-    statusPdf.textContent="Leitura concluída. A pré-conversão experimental identificou pares de componente/professor para conferência; as turmas ainda não foram associadas com segurança e nada foi publicado.";
-  }catch(err){statusPdf.textContent="Falha na leitura/envio: "+err.message;}
+    statusPdf.textContent="Leitura concluída. A pré-conversão experimental identificou pares de componente/professor para conferência; as turmas ainda não foram associadas com segurança e nada foi publicado.";if(estadoConversao)estadoConversao.textContent="Leitura concluída. Confira abaixo a prévia experimental de cada relatório. Ela não é ainda a grade definitiva por turma.";
+  }catch(err){statusPdf.textContent="Falha na leitura/envio: "+err.message;if(estadoConversao)estadoConversao.textContent="A leitura não foi concluída. Verifique a mensagem acima e tente novamente."; }
   finally{botao.disabled=false;}
 });
 function atualizarEstadoDocumentos(){
