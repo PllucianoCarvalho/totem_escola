@@ -208,3 +208,5 @@ async function carregarAtual(){
   catch{estadoAtual.textContent="Não foi possível consultar a versão publicada.";}
 }
 carregarAtual();
+const botaoVoltarTopo=document.getElementById("voltarTopo");
+if(botaoVoltarTopo)botaoVoltarTopo.addEventListener("click",()=>window.scrollTo({top:0,behavior:"smooth"}));
