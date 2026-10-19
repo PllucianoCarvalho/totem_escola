@@ -37,7 +37,7 @@ const filtroComponente=document.getElementById("filtroComponente");
 const filtroDia=document.getElementById("filtroDia");
 const resultadosGrade=document.getElementById("resultadosGrade");
 const resultadoFiltros=document.getElementById("resultadoFiltros");
-function normalizarFiltro(valor){return String(valor||"").normalize("NFD").replace(/[\\u0300-\\u036f]/g,"").toLocaleLowerCase("pt-BR").trim();}
+function normalizarFiltro(valor){return String(valor||"").normalize("NFD").replace(/[\u0300-\u036f]/g,"").toLocaleLowerCase("pt-BR").trim();}
 function renderizarConsultaGrade(){
   if(!resultadosGrade)return;
   const professor=normalizarFiltro(filtroProfessor.value),turma=normalizarFiltro(filtroTurma.value),componente=normalizarFiltro(filtroComponente.value),dia=filtroDia.value;
