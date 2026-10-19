@@ -119,7 +119,8 @@ function lerHorarios() {
     return {
         pdf: dados.pdf || null,
         atualizadoEm: dados.atualizadoEm || null,
-        professores: Array.isArray(dados.professores) ? dados.professores : []
+        professores: Array.isArray(dados.professores) ? dados.professores : [],
+        aulas: Array.isArray(dados.aulas) ? dados.aulas : []
     };
 }
 
@@ -296,6 +297,20 @@ app.post("/api/horarios/pdf/:tipo", protegerApi, (req, res, next) => {
     res.json({ sucesso: true, arquivo: req.file.filename });
 });
 
+app.post("/api/horarios/importar", protegerApi, (req, res) => {
+    const { aulas } = req.body;
+    if (!Array.isArray(aulas) || aulas.length === 0) return res.status(400).json({ erro: "Nenhuma aula válida foi identificada nos relatórios." });
+    const normalizadas = aulas.map(a => ({
+        dia: String(a.dia || "").trim(), inicio: String(a.inicio || "").trim(), fim: String(a.fim || "").trim(),
+        turma: String(a.turma || "").trim(), componente: String(a.componente || "").trim(),
+        professor: String(a.professor || "").trim(), turno: String(a.turno || "").trim(), origem: String(a.origem || "").trim()
+    })).filter(a => a.dia && a.inicio && a.fim && a.turma && a.professor && a.componente);
+    if (!normalizadas.length) return res.status(400).json({ erro: "Os dados extraídos não contêm aulas completas com professor, turma e componente." });
+    const anterior = lerHorarios();
+    const dados = { pdf: anterior.pdf, atualizadoEm: new Date().toISOString(), aulas: normalizadas, professores: normalizadas.map(a => ({ professor: a.professor, sala: "", turma: a.turma, componente: a.componente, horario: a.dia + " " + a.inicio, dia: a.dia, inicio: a.inicio, fim: a.fim, turno: a.turno })) };
+    fs.writeFileSync(caminhoHorarios, JSON.stringify(dados, null, 2), "utf8");
+    res.json({ sucesso: true, total: normalizadas.length, atualizadoEm: dados.atualizadoEm });
+});
 app.put("/api/horarios", protegerApi, (req, res) => {
     const { professores, pdf } = req.body;
     if (!Array.isArray(professores)) {
