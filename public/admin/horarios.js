@@ -229,7 +229,8 @@ function converterRelatorioIndividual(resultado){
     blocos:blocos.length,celulasEsperadas:blocos.length*60,celulasClassificadas:celulas.length,
     contagemPorTipo:celulas.reduce((acc,c)=>{acc[c.tipo]=(acc[c.tipo]||0)+1;return acc;},{}),
     desconhecidas:celulas.filter(c=>c.tipo==="DESCONHECIDO"),
-    periodosFaltantes:blocos.filter(b=>b.periodosDetectados<12)
+    periodosFaltantes:blocos.filter(b=>b.periodosDetectados<12),
+    blocosDetalhados:blocos
   };
   return {aulas:celulas.filter(c=>["TURMA","ROBOTICA","HORA_ATIVIDADE","TREINO"].includes(c.tipo)),celulas,auditoria};
 }
