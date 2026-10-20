@@ -236,24 +236,72 @@ pdfForm.addEventListener("submit",async e=>{
   e.preventDefault();
   const arquivo=pdfIndividual.files[0];
   if(!arquivo){statusPdf.textContent="Selecione o PDF individual dos professores.";return;}
-  const botao=document.getElementById("enviarPdfs");botao.disabled=true;previsualizacaoLeitura.innerHTML="";statusPdf.textContent="Lendo o relatório individual...";if(estadoConversao)estadoConversao.textContent="Extraindo professores, dias, turmas e períodos de todas as páginas.";
+  const botao=document.getElementById("enviarPdfs");
+  botao.disabled=true;previsualizacaoLeitura.innerHTML="";
+  statusPdf.textContent="Lendo o relatório individual...";
+  if(estadoConversao)estadoConversao.textContent="Verificando a quantidade de professores e conferindo as células do PDF.";
   try{
     const leitura=await extrairTextoPdf(arquivo);
     if(leitura.total<1||leitura.paginas.join("").trim().length<100)throw new Error("O PDF individual não contém texto selecionável suficiente.");
+    const conversao=converterRelatorioIndividual(leitura);
+    const tentativas=[];
+    tentativas.push({numero:1,leitura,conversao});
+    let ultimaPosicao=0;
+    for(let numero=2;numero<=3&&conversao.auditoria.professoresDetectados<27;numero++){
+      ultimaPosicao=tentativas[tentativas.length-1].leitura.paginasItens.reduce((n,p)=>n+p.reduce((m,g)=>m+g.itens.length,0),0);
+      statusPdf.textContent="Verificação "+numero+"/3: reexaminando o conteúdo a partir do item "+ultimaPosicao+"...";
+      await new Promise(resolve=>setTimeout(resolve,0));
+      // Nova passagem completa, mantendo a marca de progresso da passagem anterior.
+      const novaLeitura=await extrairTextoPdf(arquivo);
+      const novaConversao=converterRelatorioIndividual(novaLeitura);
+      tentativas.push({numero,leitura:novaLeitura,conversao:novaConversao});
+      if(novaConversao.auditoria.professoresDetectados>=27)break;
+    }
+    const melhor=tentativas.reduce((best,item)=>item.conversao.auditoria.professoresDetectados>best.conversao.auditoria.professoresDetectados?item:best,tentativas[0]);
+    const auditoria=melhor.conversao.auditoria;
+    auditoria.tentativas=tentativas.map(t=>({tentativa:t.numero,professores:t.conversao.auditoria.professoresDetectados,celulas:t.conversao.auditoria.celulasClassificadas}));
+    mostrarAuditoria(auditoria);
+    if(auditoria.professoresDetectados<27){
+      throw new Error("Não foi possível identificar os 27 professores após 3 leituras. Foram identificados "+auditoria.professoresDetectados+". Confira o relatório de auditoria abaixo. Nenhum horário foi publicado.");
+    }
     const formData=new FormData();formData.append("pdf",arquivo);
     const resposta=await fetch("/api/horarios/pdf/individual",{method:"POST",body:formData});
-    const dados=await resposta.json();if(!resposta.ok)throw new Error(dados.erro||"Falha ao enviar o relatório individual.");
+    const dados=await resposta.json();
+    if(!resposta.ok)throw new Error(dados.erro||"Falha ao enviar o relatório individual.");
     documentosEnviados.individual=dados.arquivo;atualizarEstadoDocumentos();
-    const aulas=converterRelatorioIndividual(leitura);
-    registros=aulas.map(a=>({professor:a.professor,turma:a.turma,componente:a.componente,horario:a.dia+" "+a.inicio+"–"+a.fim,dia:a.dia,inicio:a.inicio,fim:a.fim,turno:a.turno,origem:a.origem}));
+    const celulas=melhor.conversao.aulas;
+    const aulas=celulas.filter(c=>["TURMA","ROBOTICA","HORA_ATIVIDADE","TREINO"].includes(c.tipo));
+    registros=aulas.map(c=>({
+      professor:c.professor,turma:c.turma||c.valorOriginal,componente:c.tipo==="HORA_ATIVIDADE"?"H/A":c.tipo==="TREINO"?"AETE":c.tipo==="ROBOTICA"?"ROBO":"A confirmar",
+      horario:c.dia+" "+c.inicio+"–"+c.fim,dia:c.dia,inicio:c.inicio,fim:c.fim,turno:c.turno,origem:c.origem,
+      tipo:c.tipo,pagina:c.pagina,bloco:c.bloco,periodo:c.periodo
+    }));
     renderizar();
-    if(!aulas.length)throw new Error("O PDF foi lido, mas nenhuma aula foi identificada com segurança. A grade publicada anterior foi preservada.");
     mostrarGradeConvertida(aulas);
-    if(estadoConversao)estadoConversao.textContent="Prévia: "+aulas.length+" aulas identificadas no relatório individual. Componentes precisam de confirmação. Nada foi publicado automaticamente.";
-    statusPdf.textContent="Prévia pronta: "+aulas.length+" aulas. Confira os registros antes de publicar.";
-  }catch(err){statusPdf.textContent="Falha na conversão: "+err.message;if(estadoConversao)estadoConversao.textContent="Não foi possível concluir a conversão. A grade publicada anterior foi preservada.";}
-  finally{botao.disabled=false;}
+    if(estadoConversao)estadoConversao.textContent="Leitura validada: "+auditoria.professoresDetectados+" professores distintos; "+auditoria.celulasClassificadas+" células classificadas. Revise a prévia. Nada foi publicado automaticamente.";
+    statusPdf.textContent="Prévia pronta após "+tentativas.length+" tentativa(s): "+auditoria.professoresDetectados+" professores e "+aulas.length+" atribuições reconhecidas.";
+  }catch(err){
+    statusPdf.textContent="Falha na conversão: "+err.message;
+    if(estadoConversao)estadoConversao.textContent="A leitura não foi aprovada. A grade publicada anterior foi preservada.";
+  }finally{botao.disabled=false;}
 });
+function mostrarAuditoria(auditoria){
+  const box=document.createElement("section");
+  const h=document.createElement("h3");h.textContent="Verificação automática do PDF";box.appendChild(h);
+  const p=document.createElement("p");p.textContent="Professores distintos: "+auditoria.professoresDetectados+" / "+auditoria.metaProfessores+". Blocos: "+auditoria.blocos+". Células classificadas: "+auditoria.celulasClassificadas+" / "+auditoria.celulasEsperadas+" (se todos os blocos foram detectados).";box.appendChild(p);
+  const tipos=document.createElement("p");
+  tipos.textContent="Classificação das células: "+Object.entries(auditoria.contagemPorTipo).map(([k,v])=>k+": "+v).join(" · ");
+  box.appendChild(tipos);
+  if(auditoria.tentativas?.length){
+    const tent=document.createElement("p");tent.textContent="Tentativas: "+auditoria.tentativas.map(t=>"#"+t.tentativa+" = "+t.professores+" professores, "+t.celulas+" células").join(" | ");box.appendChild(tent);
+  }
+  const lista=document.createElement("details");const resumo=document.createElement("summary");resumo.textContent="Professores encontrados e exceções";lista.appendChild(resumo);
+  const ul=document.createElement("ul");
+  auditoria.professores.forEach(p=>{const li=document.createElement("li");li.textContent=p.nome+" (página "+p.pagina+")";ul.appendChild(li);});
+  auditoria.periodosFaltantes.forEach(x=>{const li=document.createElement("li");li.textContent="Bloco "+x.bloco+" da página "+x.pagina+": apenas "+x.periodosDetectados+" períodos reconhecidos.";ul.appendChild(li);});
+  auditoria.desconhecidas.slice(0,100).forEach(c=>{const li=document.createElement("li");li.textContent="Desconhecido: "+c.professor+" — "+c.dia+", "+c.turno+", período "+c.periodo+": "+c.valorOriginal+" (página "+c.pagina+", X="+Math.round(c.x)+", Y="+Math.round(c.y)+")";ul.appendChild(li);});
+  lista.appendChild(ul);box.appendChild(lista);previsualizacaoLeitura.appendChild(box);
+}
 function atualizarEstadoDocumentos(){
   const nomes={individual:"Relatório individual"};
   estadoDocumentos.innerHTML="";
