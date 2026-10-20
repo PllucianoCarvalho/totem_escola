@@ -341,6 +341,10 @@ document.getElementById("salvarHorarios").addEventListener("click",async()=>{
   try{
     const prepararRegistro=r=>{const m=String(r.horario||"").match(/^(segunda-feira|terça-feira|quarta-feira|quinta-feira|sexta-feira|sábado|domingo)\s+(\d{2}:\d{2})\s*[–-]\s*(\d{2}:\d{2})$/i);return {professor:r.professor,turma:r.turma,componente:r.componente,horario:r.horario,dia:m?m[1]:(r.dia||""),inicio:m?m[2]:(r.inicio||""),fim:m?m[3]:(r.fim||""),turno:(m?Number(m[2].slice(0,2)):Number(String(r.inicio||"00").slice(0,2)))<12?"manhã":"tarde",origem:r.origem||""};};
     const registrosProntos=registros.map(prepararRegistro);
+    const incompletos=registrosProntos.filter(r=>!r.professor||!r.turma||!r.componente);
+    if(incompletos.length){throw new Error("Há "+incompletos.length+" registro(s) sem professor, turma ou componente. Complete-os antes de publicar.");}
+    const nomesLidos=[...new Set(registrosProntos.map(r=>normalizarNomeProfessor(r.professor)).filter(Boolean))];
+    if(documentosEnviados.individual&&nomesLidos.length<27){throw new Error("A publicação foi bloqueada: a prévia contém somente "+nomesLidos.length+" professores distintos; são necessários pelo menos 27.");}
     const resposta=await fetch("/api/horarios",{method:"PUT",headers:{"Content-Type":"application/json"},body:JSON.stringify({professores:registrosProntos,aulas:registrosProntos,pdf:pdfSelecionado})});
     const dados=await resposta.json();if(!resposta.ok)throw new Error(dados.erro||"Falha ao salvar.");
     statusSalvar.textContent="Horários publicados. Registros: "+dados.total+".";
