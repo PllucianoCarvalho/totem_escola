@@ -124,23 +124,26 @@ function normalizarNomeProfessor(valor){
 function extrairProfessores(resultado){
   const professores=[];
   resultado.paginasItens.forEach((grupos,pagina)=>{
-    grupos.forEach(g=>{
-      const cabecalhos=[];
-      g.itens.forEach(i=>{
-        if(!/^Hor$/i.test(i.texto))return;
-        const dias=g.itens.filter(d=>["Seg","Ter","Qua","Qui","Sex"].includes(d.texto)&&d.x>i.x);
-        if(dias.length>=4) cabecalhos.push(i);
-      });
-      cabecalhos.forEach(cab=>{
-        const anteriores=grupos.filter(l=>l.y>cab.y&&l.y-cab.y<=40);
-        if(!anteriores.length)return;
-        const yNome=Math.min(...anteriores.map(l=>l.y));
-        const fragmentos=anteriores.filter(l=>Math.abs(l.y-yNome)<=2).flatMap(l=>l.itens)
-          .filter(i=>i.x>=cab.x-45&&i.x<cab.x+210&&!/^(Hor|Seg|Ter|Qua|Qui|Sex|0?[1-6][º°o]?)$/i.test(i.texto))
-          .sort((a,b)=>a.x-b.x);
-        const nome=fragmentos.map(i=>i.texto).join(" ").replace(/\s+/g," ").trim();
-        if(nome&&/[A-Za-zÀ-ÿ]{2}/.test(nome)) professores.push({nome,pagina:pagina+1,x:cab.x,y:cab.y});
-      });
+    const cabecalhos=[];
+    grupos.forEach(g=>g.itens.filter(i=>/^Hor$/i.test(i.texto)).forEach(item=>{
+      const dias=g.itens.filter(d=>["Seg","Ter","Qua","Qui","Sex"].includes(d.texto)&&d.x>item.x);
+      if(dias.length>=4&&!cabecalhos.some(c=>Math.abs(c.x-item.x)<8&&Math.abs(c.y-g.y)<3))
+        cabecalhos.push({x:item.x,y:g.y});
+    }));
+    cabecalhos.sort((a,b)=>a.x-b.x);
+    cabecalhos.forEach((cab,idx)=>{
+      const limiteEsq=cab.x-45,limiteDir=cabecalhos[idx+1]?.x-8??Infinity;
+      const faixas=grupos.filter(g=>g.y>cab.y&&g.y-cab.y<=48)
+        .map(g=>({g,dist:g.y-cab.y}))
+        .filter(({g})=>g.itens.some(i=>i.x>=limiteEsq&&i.x<limiteDir&&!/^(Hor|Seg|Ter|Qua|Qui|Sex|0?[1-6][º°o]?)$/i.test(i.texto)));
+      let nome="";
+      if(faixas.length){
+        const yNome=Math.min(...faixas.map(x=>x.g.y));
+        nome=faixas.filter(x=>Math.abs(x.g.y-yNome)<=2).flatMap(x=>x.g.itens)
+          .filter(i=>i.x>=limiteEsq&&i.x<limiteDir&&!/^(Hor|Seg|Ter|Qua|Qui|Sex|0?[1-6][º°o]?)$/i.test(i.texto))
+          .sort((a,b)=>a.x-b.x).map(i=>i.texto).join(" ").replace(/\s+/g," ").trim();
+      }
+      if(nome&&/[A-Za-zÀ-ÿ]{2}/.test(nome))professores.push({nome,pagina:pagina+1,bloco:idx+1,x:cab.x,y:cab.y});
     });
   });
   const unicos=new Map();
