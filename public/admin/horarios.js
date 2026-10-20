@@ -312,18 +312,15 @@ pdfForm.addEventListener("submit",async e=>{
 function mostrarAuditoria(auditoria){
   const box=document.createElement("section");
   const h=document.createElement("h3");h.textContent="Verificação automática do PDF";box.appendChild(h);
-  const p=document.createElement("p");p.textContent="Professores distintos: "+auditoria.professoresDetectados+" / "+auditoria.metaProfessores+". Blocos: "+auditoria.blocos+". Células classificadas: "+auditoria.celulasClassificadas+" / "+auditoria.celulasEsperadas+" (se todos os blocos foram detectados).";box.appendChild(p);
-  const tipos=document.createElement("p");
-  tipos.textContent="Classificação das células: "+Object.entries(auditoria.contagemPorTipo).map(([k,v])=>k+": "+v).join(" · ");
-  box.appendChild(tipos);
-  if(auditoria.tentativas?.length){
-    const tent=document.createElement("p");tent.textContent="Tentativas: "+auditoria.tentativas.map(t=>"#"+t.tentativa+" = "+t.professores+" professores, "+t.celulas+" células").join(" | ");box.appendChild(tent);
-  }
-  const lista=document.createElement("details");const resumo=document.createElement("summary");resumo.textContent="Professores encontrados e exceções";lista.appendChild(resumo);
+  const p=document.createElement("p");p.textContent="Professores detectados: "+auditoria.professoresDetectados+" / "+auditoria.metaProfessores+". Blocos: "+auditoria.blocos+". Células examinadas: "+auditoria.celulasClassificadas+" / "+auditoria.celulasEsperadas+".";box.appendChild(p);
+  const tipos=document.createElement("p");tipos.textContent="Tipos: "+Object.entries(auditoria.contagemPorTipo).map(([k,v])=>k+": "+v).join(" · ");box.appendChild(tipos);
+  if(auditoria.tentativas?.length){const tent=document.createElement("p");tent.textContent="Leituras: "+auditoria.tentativas.map(t=>"#"+t.tentativa+" = "+t.professores+" professores, "+t.celulas+" células").join(" | ");box.appendChild(tent);}
+  const lista=document.createElement("details"),resumo=document.createElement("summary");resumo.textContent="Nomes encontrados e exceções";lista.appendChild(resumo);
   const ul=document.createElement("ul");
-  auditoria.professores.forEach(p=>{const li=document.createElement("li");li.textContent=p.nome+" (página "+p.pagina+")";ul.appendChild(li);});
-  auditoria.periodosFaltantes.forEach(x=>{const li=document.createElement("li");li.textContent="Bloco "+x.bloco+" da página "+x.pagina+": apenas "+x.periodosDetectados+" períodos reconhecidos.";ul.appendChild(li);});
-  auditoria.desconhecidas.slice(0,100).forEach(c=>{const li=document.createElement("li");li.textContent="Desconhecido: "+c.professor+" — "+c.dia+", "+c.turno+", período "+c.periodo+": "+c.valorOriginal+" (página "+c.pagina+", X="+Math.round(c.x)+", Y="+Math.round(c.y)+")";ul.appendChild(li);});
+  auditoria.professores.forEach(p=>{const li=document.createElement("li");li.textContent=p.nome+" — página "+p.pagina+", bloco "+(p.bloco||"?");ul.appendChild(li);});
+  auditoria.blocosDetalhados?.filter(x=>!x.professor||x.professor==="PROFESSOR_NÃO_RECONHECIDO").forEach(x=>{const li=document.createElement("li");li.textContent="Bloco sem professor reconhecido: página "+x.pagina+", bloco "+x.bloco;ul.appendChild(li);});
+  auditoria.periodosFaltantes.forEach(x=>{const li=document.createElement("li");li.textContent="Bloco "+x.bloco+" da página "+x.pagina+": "+x.periodosDetectados+" períodos reconhecidos.";ul.appendChild(li);});
+  auditoria.desconhecidas.slice(0,100).forEach(c=>{const li=document.createElement("li");li.textContent="Desconhecido: "+c.professor+" — "+c.dia+", "+c.turno+", período "+c.periodo+": "+c.valorOriginal+" (pág. "+c.pagina+", X="+Math.round(c.x)+", Y="+Math.round(c.y)+")";ul.appendChild(li);});
   lista.appendChild(ul);box.appendChild(lista);previsualizacaoLeitura.appendChild(box);
 }
 function atualizarEstadoDocumentos(){
