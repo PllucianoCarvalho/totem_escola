@@ -267,13 +267,14 @@ pdfForm.addEventListener("submit",async e=>{
   if(estadoConversao)estadoConversao.textContent="Verificando professores e células do PDF.";
   try{
     const passagens=[];
+    let encontrouMeta=false;
     for(let tentativa=1;tentativa<=3;tentativa++){
       statusPdf.textContent="Leitura "+tentativa+"/3 do relatório individual...";
       const leitura=await extrairTextoPdf(arquivo);
       if(leitura.total<1||leitura.paginas.join("").trim().length<100)throw new Error("O PDF individual não contém texto selecionável suficiente.");
       const conversao=converterRelatorioIndividual(leitura);
       passagens.push({tentativa,leitura,conversao});
-      if(conversao.auditoria.professoresDetectados>=27)break;
+      if(conversao.auditoria.professoresDetectados>=27){encontrouMeta=true;break;}
       if(tentativa<3){
         const contagem=leitura.paginasItens.reduce((n,p)=>n+p.reduce((m,g)=>m+g.itens.length,0),0);
         statusPdf.textContent="Encontrados "+conversao.auditoria.professoresDetectados+" professores. Preparando releitura "+(tentativa+1)+"/3; itens de texto examinados: "+contagem+".";
@@ -284,7 +285,7 @@ pdfForm.addEventListener("submit",async e=>{
     const auditoria=melhor.conversao.auditoria;
     auditoria.tentativas=passagens.map(t=>({tentativa:t.tentativa,professores:t.conversao.auditoria.professoresDetectados,celulas:t.conversao.auditoria.celulasClassificadas}));
     mostrarAuditoria(auditoria);
-    if(auditoria.professoresDetectados<27)throw new Error("Não foi possível identificar os 27 professores após "+passagens.length+" leitura(s). Foram encontrados "+auditoria.professoresDetectados+". Confira o relatório de auditoria. Nenhum horário foi publicado.");
+    if(!encontrouMeta||auditoria.professoresDetectados<27)throw new Error("Não foi possível identificar os 27 professores após "+passagens.length+" leitura(s). Foram encontrados "+auditoria.professoresDetectados+". Confira o relatório de auditoria. Nenhum horário foi publicado.");
     const formData=new FormData();formData.append("pdf",arquivo);
     const resposta=await fetch("/api/horarios/pdf/individual",{method:"POST",body:formData});
     const dados=await resposta.json();if(!resposta.ok)throw new Error(dados.erro||"Falha ao enviar o relatório individual.");
