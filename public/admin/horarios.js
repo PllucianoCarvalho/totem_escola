@@ -155,7 +155,7 @@ function extrairProfessores(resultado){
   professores.forEach(p=>{const chave=normalizarNomeProfessor(p.nome);if(chave&&!unicos.has(chave))unicos.set(chave,p);});
   return [...unicos.values()];
 }
-function converterRelatorioIndividual(resultado){
+function converterRelatorioIndividual(resultado, tentativa=1){
   const nomesDias={"Seg":"segunda-feira","Ter":"terça-feira","Qua":"quarta-feira","Qui":"quinta-feira","Sex":"sexta-feira"};
   const horarios={
     manha:[["07:00","07:50"],["07:50","08:40"],["08:40","09:30"],["09:40","10:30"],["10:30","11:20"],["11:20","12:10"]],
@@ -185,13 +185,19 @@ function converterRelatorioIndividual(resultado){
     cabecalhos.forEach((cab,idx)=>{
       const limiteEsq=cabecalhos[idx-1]?(cabecalhos[idx-1].x+cab.x)/2:-Infinity;
       const limiteDir=cabecalhos[idx+1]?(cab.x+cabecalhos[idx+1].x)/2:Infinity;
-      const pertoNome=grupos.filter(g=>g.y>cab.y&&g.y-cab.y<=40);
+      const janelaNome=tentativa===1?40:tentativa===2?70:110;
+      const linhasNome=grupos.filter(g=>g.y>cab.y&&g.y-cab.y<=janelaNome).sort((a,b)=>a.y-b.y);
       let professor="";
-      if(pertoNome.length){
-        const yNome=Math.min(...pertoNome.map(g=>g.y));
-        professor=pertoNome.filter(g=>Math.abs(g.y-yNome)<=2).flatMap(g=>g.itens)
-          .filter(i=>i.x>=limiteEsq&&i.x<limiteDir&&!/^(Hor|Seg|Ter|Qua|Qui|Sex|0?[1-6][º°o]?)$/i.test(i.texto))
-          .sort((a,b)=>a.x-b.x).map(i=>i.texto).join(" ").replace(/\s+/g," ").trim();
+      for(const grupoNome of linhasNome){
+        const partesNome=grupoNome.itens
+          .filter(i=>i.x>=limiteEsq&&i.x<limiteDir)
+          .filter(i=>/^[A-Za-zÀ-ÿ][A-Za-zÀ-ÿ .'-]*$/.test(i.texto.trim()))
+          .filter(i=>!/^(Hor|Seg|Ter|Qua|Qui|Sex|H\/A|HA|AETE|ROBO|------|[1-9][A-E])$/i.test(i.texto.trim()));
+        if(partesNome.length){
+          professor=partesNome.sort((a,b)=>a.x-b.x).map(i=>i.texto).join(" ").replace(/\s+/g," ").trim();
+          if(professor.length>=3)break;
+          professor="";
+        }
       }
       if(professor)professores.push({nome:professor,pagina:pagina+1,bloco:idx+1,x:cab.x,y:cab.y});
       const linhasPeriodos=grupos.filter(g=>g.y<cab.y&&g.y>cab.y-240&&g.itens.some(i=>/^0?[1-6][º°o]?$/.test(i.texto)))
@@ -280,7 +286,7 @@ pdfForm.addEventListener("submit",async e=>{
       statusPdf.textContent="Leitura "+tentativa+"/3 do relatório individual...";
       const leitura=await extrairTextoPdf(arquivo);
       if(leitura.total<1||leitura.paginas.join("").trim().length<100)throw new Error("O PDF individual não contém texto selecionável suficiente.");
-      const conversao=converterRelatorioIndividual(leitura);
+      const conversao=converterRelatorioIndividual(leitura,tentativa);
       passagens.push({tentativa,leitura,conversao});
       if(conversao.auditoria.professoresDetectados>=27){encontrouMeta=true;break;}
       if(tentativa<3){
