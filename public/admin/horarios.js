@@ -169,11 +169,16 @@ function converterRelatorioIndividual(resultado){
   const celulas=[],blocos=[],professores=[];
   resultado.paginasItens.forEach((grupos,pagina)=>{
     const cabecalhos=[];
-    grupos.forEach(g=>g.itens.filter(i=>/^Hor$/i.test(i.texto)).forEach(item=>{
-      const dias=g.itens.filter(i=>["Seg","Ter","Qua","Qui","Sex"].includes(i.texto)&&i.x>item.x);
-      if(dias.length>=4&&!cabecalhos.some(c=>Math.abs(c.x-item.x)<8&&Math.abs(c.y-g.y)<3))
-        cabecalhos.push({x:item.x,y:g.y,dias:dias.map(i=>({dia:nomesDias[i.texto],rotulo:i.texto,x:i.x})).sort((a,b)=>a.x-b.x)});
-    }));
+    grupos.forEach(g=>{
+      const cabecas=g.itens.filter(i=>/^Hor$/i.test(i.texto)).sort((a,b)=>a.x-b.x);
+      cabecas.forEach((item,indice)=>{
+        const proximoX=cabecas[indice+1]?.x??Infinity;
+        const dias=g.itens.filter(i=>["Seg","Ter","Qua","Qui","Sex"].includes(i.texto)&&i.x>item.x&&i.x<proximoX)
+          .sort((a,b)=>a.x-b.x);
+        if(dias.length===5&&!cabecalhos.some(c=>Math.abs(c.x-item.x)<8&&Math.abs(c.y-g.y)<3))
+          cabecalhos.push({x:item.x,y:g.y,dias:dias.map(i=>({dia:nomesDias[i.texto],rotulo:i.texto,x:i.x}))});
+      });
+    });
     cabecalhos.sort((a,b)=>a.x-b.x);
     cabecalhos.forEach((cab,idx)=>{
       const limiteDir=cabecalhos[idx+1]?.x-8??Infinity;
