@@ -126,10 +126,12 @@ function extrairProfessores(resultado){
   resultado.paginasItens.forEach((grupos,pagina)=>{
     const linhasCab=[];
     grupos.forEach(g=>{
-      const hor=g.itens.filter(i=>/^Hor$/i.test(i.texto));
-      if(!hor.length)return;
-      const dias=g.itens.filter(i=>["Seg","Ter","Qua","Qui","Sex"].includes(i.texto));
-      if(dias.length>=4)linhasCab.push({g,hor,dias});
+      const hor=g.itens.filter(i=>/^Hor$/i.test(i.texto)).sort((a,b)=>a.x-b.x);
+      hor.forEach((item,indice)=>{
+        const proximoX=hor[indice+1]?.x??Infinity;
+        const dias=g.itens.filter(i=>["Seg","Ter","Qua","Qui","Sex"].includes(i.texto)&&i.x>item.x&&i.x<proximoX);
+        if(dias.length===5)linhasCab.push({g,hor:[item],dias});
+      });
     });
     const cabecalhos=[];
     linhasCab.forEach(({g,hor})=>hor.forEach(item=>{
