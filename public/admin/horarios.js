@@ -215,7 +215,7 @@ function converterRelatorioIndividual(resultado, tentativa=1){
         const linha=doze[n];
         const turno=n<6?"manhã":"tarde";
         const periodo=(n%6)+1;
-        const [inicio,fim]=horarios[turno][periodo-1];
+        const [inicio,fim]=horarios[turno==="manhã"?"manha":"tarde"][periodo-1];
         cab.dias.forEach((col,diaIdx)=>{
           const itens=linha?linha.itens.filter(i=>i.x>=limites[diaIdx].esq&&i.x<limites[diaIdx].dir&&!/^0?[1-6][º°o]?$/.test(i.texto)):[];
           const bruto=itens.map(i=>i.texto).join(" ").replace(/\s+/g," ").trim().toUpperCase();
