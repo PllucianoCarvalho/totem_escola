@@ -338,7 +338,7 @@ document.getElementById("salvarHorarios").addEventListener("click",async()=>{
     const nomesLidos=[...new Set(registrosProntos.map(r=>normalizarNomeProfessor(r.professor)).filter(Boolean))];
     if(documentosEnviados.individual&&nomesLidos.length<27){throw new Error("A publicação foi bloqueada: a prévia contém somente "+nomesLidos.length+" professores distintos; são necessários pelo menos 27.");}
     const aulasParaPublicar=registrosProntos.map(r=>({...r,componente:r.componente||"A confirmar"}));
-    const resposta=await fetch("/api/horarios",{method:"PUT",headers:{"Content-Type":"application/json"},body:JSON.stringify({professores:aulasParaPublicar,aulas:aulasParaPublicar,pdf:pdfSelecionado})});
+    const resposta=await fetch("/api/horarios",{method:"PUT",headers:{"Content-Type":"application/json"},body:JSON.stringify({professores:aulasParaPublicar,aulas:aulasParaPublicar,pdf:documentosEnviados.individual||pdfSelecionado})});
     const dados=await resposta.json();if(!resposta.ok)throw new Error(dados.erro||"Falha ao salvar.");
     statusSalvar.textContent="Horários publicados. Registros: "+dados.total+".";
     carregarAtual();
