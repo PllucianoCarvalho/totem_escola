@@ -235,11 +235,26 @@ function converterRelatorioIndividual(resultado){
 }
 function mostrarGradeConvertida(aulas){
   previsualizacaoLeitura.innerHTML="";
-  const sec=document.createElement("section");const h=document.createElement("h3");h.textContent="Grade extraída do relatório individual";sec.appendChild(h);
-  const resumo=document.createElement("p");resumo.textContent=aulas.length+" aulas identificadas; o componente curricular precisa ser confirmado.";sec.appendChild(resumo);
-  const details=document.createElement("details");details.open=true;const sum=document.createElement("summary");sum.textContent="Conferir grade convertida";details.appendChild(sum);
-  const table=document.createElement("table");const thead=document.createElement("thead");thead.innerHTML="<tr><th>Dia</th><th>Horário</th><th>Turma</th><th>Componente</th><th>Professor</th></tr>";table.appendChild(thead);const tbody=document.createElement("tbody");
-  aulas.slice(0,300).forEach(a=>{const tr=document.createElement("tr");[a.dia,a.inicio+"–"+a.fim,a.turma,a.componente,a.professor].forEach(v=>{const td=document.createElement("td");td.textContent=v;tr.appendChild(td);});tbody.appendChild(tr);});table.appendChild(tbody);details.appendChild(table);sec.appendChild(details);previsualizacaoLeitura.appendChild(sec);
+  const sec=document.createElement("section");
+  const h=document.createElement("h3");h.textContent="Prévia da grade extraída";sec.appendChild(h);
+  const resumo=document.createElement("p");resumo.textContent=aulas.length+" atribuições reconhecidas. O componente curricular precisa ser confirmado.";sec.appendChild(resumo);
+  const filtro=document.createElement("input");filtro.type="search";filtro.placeholder="Filtrar por professor, turma ou tipo";filtro.setAttribute("aria-label","Filtrar prévia");
+  const details=document.createElement("details");details.open=true;const sum=document.createElement("summary");sum.textContent="Conferir registros reconhecidos";details.appendChild(sum);
+  const table=document.createElement("table");const thead=document.createElement("thead");thead.innerHTML="<tr><th>Professor</th><th>Dia</th><th>Turno</th><th>Período</th><th>Horário</th><th>Valor/turma</th><th>Tipo</th></tr>";table.appendChild(thead);
+  const tbody=document.createElement("tbody");
+  const desenhar=()=>{
+    tbody.innerHTML="";
+    const termo=normalizarFiltro(filtro.value);
+    const itens=aulas.filter(a=>normalizarFiltro([a.professor,a.turma,a.tipo,a.valorOriginal].join(" ")).includes(termo));
+    itens.slice(0,1000).forEach(a=>{
+      const tr=document.createElement("tr");
+      [a.professor,a.dia,a.turno,String(a.periodo).padStart(2,"0"),a.inicio+"–"+a.fim,a.turma||a.valorOriginal,a.tipo].forEach(v=>{const td=document.createElement("td");td.textContent=v;tr.appendChild(td);});
+      tbody.appendChild(tr);
+    });
+    if(itens.length>1000){const tr=document.createElement("tr"),td=document.createElement("td");td.colSpan=7;td.textContent="Exibindo 1.000 de "+itens.length+" registros; use o filtro para restringir.";tr.appendChild(td);tbody.appendChild(tr);}
+  };
+  filtro.addEventListener("input",desenhar);desenhar();
+  table.appendChild(tbody);details.appendChild(table);sec.append(filtro,details);previsualizacaoLeitura.appendChild(sec);
 }
 pdfForm.addEventListener("submit",async e=>{
   e.preventDefault();
