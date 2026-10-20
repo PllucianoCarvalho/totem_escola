@@ -156,73 +156,79 @@ function converterRelatorioIndividual(resultado){
     manha:[["07:00","07:50"],["07:50","08:40"],["08:40","09:30"],["09:40","10:30"],["10:30","11:20"],["11:20","12:10"]],
     tarde:[["12:15","13:05"],["13:05","13:55"],["13:55","14:45"],["14:55","15:45"],["15:45","16:35"],["16:35","17:25"]]
   };
-  const valoresConhecidos=[
+  const conhecidos=[
     {re:/^(?:[1-9][A-E])(?:\s+II)?$/i,tipo:"TURMA"},
     {re:/^H\/A$/i,tipo:"HORA_ATIVIDADE"},
     {re:/^AETE$/i,tipo:"TREINO"},
     {re:/^ROBO$/i,tipo:"ROBOTICA"},
     {re:/^(?:-+|—+)$/,tipo:"SEM_VINCULO"}
   ];
-  const resultadoCelulas=[],blocos=[],professores=extrairProfessores(resultado);
+  const celulas=[],blocos=[],professores=[];
   resultado.paginasItens.forEach((grupos,pagina)=>{
     const cabecalhos=[];
-    grupos.forEach(g=>{
-      const hors=g.itens.filter(i=>/^Hor$/i.test(i.texto));
-      hors.forEach(item=>{
-        const dias=g.itens.filter(i=>["Seg","Ter","Qua","Qui","Sex"].includes(i.texto)&&i.x>item.x);
-        if(dias.length>=4&&!cabecalhos.some(c=>Math.abs(c.x-item.x)<8&&Math.abs(c.y-g.y)<3))
-          cabecalhos.push({x:item.x,y:g.y,dias:dias.map(i=>({dia:nomesDias[i.texto],rotulo:i.texto,x:i.x})).sort((a,b)=>a.x-b.x)});
-      });
-    });
+    grupos.forEach(g=>g.itens.filter(i=>/^Hor$/i.test(i.texto)).forEach(item=>{
+      const dias=g.itens.filter(i=>["Seg","Ter","Qua","Qui","Sex"].includes(i.texto)&&i.x>item.x);
+      if(dias.length>=4&&!cabecalhos.some(c=>Math.abs(c.x-item.x)<8&&Math.abs(c.y-g.y)<3))
+        cabecalhos.push({x:item.x,y:g.y,dias:dias.map(i=>({dia:nomesDias[i.texto],rotulo:i.texto,x:i.x})).sort((a,b)=>a.x-b.x)});
+    }));
     cabecalhos.sort((a,b)=>a.x-b.x);
     cabecalhos.forEach((cab,idx)=>{
-      const limiteEsq=cab.x-8,limiteDir=cabecalhos[idx+1]?.x-8??Infinity;
-      const nomeProfessor=professores.filter(p=>p.pagina===pagina+1&&p.x>=cab.x-8&&p.x<=cab.x+8)
-        .sort((a,b)=>Math.abs(a.y-cab.y)-Math.abs(b.y-cab.y))[0]?.nome||"";
-      const linhasPeriodos=grupos.filter(g=>g.y<cab.y&&g.y>cab.y-230&&g.itens.some(i=>/^0?[1-6][º°o]?$/.test(i.texto)));
-      const periodosOrdenados=[...new Map(linhasPeriodos.map(g=>[Math.round(g.y),g])).values()].sort((a,b)=>b.y-a.y);
-      const seis=periodosOrdenados.slice(0,12);
-      blocos.push({pagina:pagina+1,bloco:idx+1,professor:nomeProfessor,periodosDetectados:seis.length});
-      for(let linhaIndex=0;linhaIndex<12;linhaIndex++){
-        const linha=seis[linhaIndex];
-        const turno=linhaIndex<6?"manhã":"tarde";
-        const periodo=(linhaIndex%6)+1;
-        const faixa=horarios[turno][periodo-1];
-        const itemPeriodo=linha?.itens.find(i=>/^0?[1-6][º°o]?$/.test(i.texto)&&i.x>=limiteEsq-12&&i.x<limiteDir);
-        for(const col of cab.dias){
-          const candidatos=linha?linha.itens.filter(i=>i.x>=col.x-34&&i.x<col.x+34&&i!==itemPeriodo):[];
-          const textos=candidatos.filter(i=>!/^(0?[1-6][º°o]?)$/.test(i.texto)).sort((a,b)=>a.x-b.x);
-          let bruto=textos.map(i=>i.texto).join(" ").replace(/\s+/g," ").trim().toUpperCase();
-          if(!bruto)bruto=""; 
-          const classificado=valoresConhecidos.find(v=>v.re.test(bruto));
-          let tipo=classificado?.tipo|| (bruto?"DESCONHECIDO":"SEM_VINCULO");
-          let turma=(tipo==="TURMA"||tipo==="ROBOTICA")?bruto:"";
-          const origem=textos[0]?{x:textos[0].x,y:textos[0].y}:null;
-          resultadoCelulas.push({
-            professor:nomeProfessor||"PROFESSOR_NÃO_RECONHECIDO",turma,tipo,valorOriginal:bruto||"(sem texto)",
-            dia:col.dia,periodo,turno,inicio:faixa[0],fim:faixa[1],
-            componente:"A confirmar",origem:"individual",pagina:pagina+1,bloco:idx+1,
-            x:origem?.x??col.x,y:origem?.y??linha?.y??cab.y
+      const limiteDir=cabecalhos[idx+1]?.x-8??Infinity;
+      const pertoNome=grupos.filter(g=>g.y>cab.y&&g.y-cab.y<=40);
+      let professor="";
+      if(pertoNome.length){
+        const yNome=Math.min(...pertoNome.map(g=>g.y));
+        professor=pertoNome.filter(g=>Math.abs(g.y-yNome)<=2).flatMap(g=>g.itens)
+          .filter(i=>i.x>=cab.x-45&&i.x<limiteDir&&!/^(Hor|Seg|Ter|Qua|Qui|Sex|0?[1-6][º°o]?)$/i.test(i.texto))
+          .sort((a,b)=>a.x-b.x).map(i=>i.texto).join(" ").replace(/\s+/g," ").trim();
+      }
+      if(professor)professores.push({nome:professor,pagina:pagina+1,bloco:idx+1,x:cab.x,y:cab.y});
+      const linhasPeriodos=grupos.filter(g=>g.y<cab.y&&g.y>cab.y-240&&g.itens.some(i=>/^0?[1-6][º°o]?$/.test(i.texto)))
+        .sort((a,b)=>b.y-a.y);
+      const periodos=[];
+      linhasPeriodos.forEach(g=>{
+        const token=g.itens.find(i=>/^0?[1-6][º°o]?$/.test(i.texto)&&i.x>=cab.x-15&&i.x<limiteDir);
+        if(token&&!periodos.some(p=>Math.abs(p.y-g.y)<2))periodos.push({y:g.y,numero:Number.parseInt(token.texto,10),itens:g.itens});
+      });
+      const doze=periodos.slice(0,12);
+      blocos.push({pagina:pagina+1,bloco:idx+1,professor:professor||"PROFESSOR_NÃO_RECONHECIDO",periodosDetectados:doze.length});
+      const centros=cab.dias.map(d=>d.x);
+      const limites=centros.map((x,i)=>({esq:i===0?cab.x+20:(centros[i-1]+x)/2,dir:i===centros.length-1?limiteDir:(x+centros[i+1])/2}));
+      for(let n=0;n<12;n++){
+        const linha=doze[n];
+        const turno=n<6?"manhã":"tarde";
+        const periodo=(n%6)+1;
+        const [inicio,fim]=horarios[turno][periodo-1];
+        cab.dias.forEach((col,diaIdx)=>{
+          const itens=linha?linha.itens.filter(i=>i.x>=limites[diaIdx].esq&&i.x<limites[diaIdx].dir&&!/^0?[1-6][º°o]?$/.test(i.texto)):[];
+          const bruto=itens.map(i=>i.texto).join(" ").replace(/\s+/g," ").trim().toUpperCase();
+          const normal=bruto.replace(/\s+/g," ");
+          const classificado=conhecidos.find(v=>v.re.test(normal));
+          const tipo=classificado?.tipo||(normal?"DESCONHECIDO":"SEM_VINCULO");
+          const turma=tipo==="TURMA"||tipo==="ROBOTICA"?normal:"";
+          celulas.push({
+            professor:professor||"PROFESSOR_NÃO_RECONHECIDO",turma,tipo,valorOriginal:normal||"(sem texto)",
+            dia:col.dia,periodo,turno,inicio,fim,componente:"A confirmar",origem:"individual",
+            pagina:pagina+1,bloco:idx+1,x:itens[0]?.x??col.x,y:itens[0]?.y??linha?.y??cab.y
           });
-        }
+        });
       }
     });
   });
-  const nomes=[...new Set(professores.map(p=>normalizarNomeProfessor(p.nome)))].filter(Boolean);
-  const esperados=27;
+  const nomesUnicos=new Map();
+  professores.forEach(p=>{
+    const nome=String(p.nome).normalize("NFD").replace(/[\u0300-\u036f]/g,"").toUpperCase().replace(/[^A-Z0-9 ]/g," ").replace(/\s+/g," ").trim();
+    if(nome&&!nomesUnicos.has(nome))nomesUnicos.set(nome,p);
+  });
   const auditoria={
-    professoresDetectados:nomes.length,
-    professores:professores.map(p=>({nome:p.nome,pagina:p.pagina,x:Math.round(p.x),y:Math.round(p.y)})),
-    blocos:blocos.length,
-    celulasEsperadas:blocos.length*60,
-    celulasClassificadas:resultadoCelulas.length,
-    contagemPorTipo:resultadoCelulas.reduce((acc,c)=>{acc[c.tipo]=(acc[c.tipo]||0)+1;return acc;},{}),
-    desconhecidas:resultadoCelulas.filter(c=>c.tipo==="DESCONHECIDO"),
-    periodosFaltantes:blocos.filter(b=>b.periodosDetectados<12),
-    tentativas:1,
-    metaProfessores:esperados
+    professoresDetectados:nomesUnicos.size,metaProfessores:27,
+    professores:[...nomesUnicos.values()],
+    blocos:blocos.length,celulasEsperadas:blocos.length*60,celulasClassificadas:celulas.length,
+    contagemPorTipo:celulas.reduce((acc,c)=>{acc[c.tipo]=(acc[c.tipo]||0)+1;return acc;},{}),
+    desconhecidas:celulas.filter(c=>c.tipo==="DESCONHECIDO"),
+    periodosFaltantes:blocos.filter(b=>b.periodosDetectados<12)
   };
-  return {aulas:resultadoCelulas.filter(c=>["TURMA","ROBOTICA","HORA_ATIVIDADE","TREINO"].includes(c.tipo)),celulas:resultadoCelulas,auditoria};
+  return {aulas:celulas.filter(c=>["TURMA","ROBOTICA","HORA_ATIVIDADE","TREINO"].includes(c.tipo)),celulas,auditoria};
 }
 function mostrarGradeConvertida(aulas){
   previsualizacaoLeitura.innerHTML="";
