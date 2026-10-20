@@ -118,59 +118,111 @@ async function extrairTextoPdf(file){
   }
   return {paginas,paginasItens,total:pdf.numPages};
 }
+function normalizarNomeProfessor(valor){
+  return String(valor||"").normalize("NFD").replace(/[\u0300-\u036f]/g,"").toUpperCase().replace(/[^A-Z0-9 ]/g," ").replace(/\s+/g," ").trim();
+}
+function extrairProfessores(resultado){
+  const professores=[];
+  resultado.paginasItens.forEach((grupos,pagina)=>{
+    grupos.forEach(g=>{
+      const cabecalhos=[];
+      g.itens.forEach(i=>{
+        if(!/^Hor$/i.test(i.texto))return;
+        const dias=g.itens.filter(d=>["Seg","Ter","Qua","Qui","Sex"].includes(d.texto)&&d.x>i.x);
+        if(dias.length>=4) cabecalhos.push(i);
+      });
+      cabecalhos.forEach(cab=>{
+        const anteriores=grupos.filter(l=>l.y>cab.y&&l.y-cab.y<=40);
+        if(!anteriores.length)return;
+        const yNome=Math.min(...anteriores.map(l=>l.y));
+        const fragmentos=anteriores.filter(l=>Math.abs(l.y-yNome)<=2).flatMap(l=>l.itens)
+          .filter(i=>i.x>=cab.x-45&&i.x<cab.x+210&&!/^(Hor|Seg|Ter|Qua|Qui|Sex|0?[1-6][º°o]?)$/i.test(i.texto))
+          .sort((a,b)=>a.x-b.x);
+        const nome=fragmentos.map(i=>i.texto).join(" ").replace(/\s+/g," ").trim();
+        if(nome&&/[A-Za-zÀ-ÿ]{2}/.test(nome)) professores.push({nome,pagina:pagina+1,x:cab.x,y:cab.y});
+      });
+    });
+  });
+  const unicos=new Map();
+  professores.forEach(p=>{
+    const chave=normalizarNomeProfessor(p.nome);
+    if(chave&&!unicos.has(chave))unicos.set(chave,p);
+  });
+  return [...unicos.values()];
+}
 function converterRelatorioIndividual(resultado){
-  const dias=["Seg","Ter","Qua","Qui","Sex"];
   const nomesDias={"Seg":"segunda-feira","Ter":"terça-feira","Qua":"quarta-feira","Qui":"quinta-feira","Sex":"sexta-feira"};
-  const horarios=[["12:15","13:05"],["13:05","13:55"],["13:55","14:45"],["14:55","15:45"],["15:45","16:35"],["16:35","17:25"]];
-  const aulas=[];
-  const turmaValida=/^(?:[6789][A-E]|[123][A-D])(?:\s+II)?$/i;
+  const horarios={
+    manha:[["07:00","07:50"],["07:50","08:40"],["08:40","09:30"],["09:40","10:30"],["10:30","11:20"],["11:20","12:10"]],
+    tarde:[["12:15","13:05"],["13:05","13:55"],["13:55","14:45"],["14:55","15:45"],["15:45","16:35"],["16:35","17:25"]]
+  };
+  const valoresConhecidos=[
+    {re:/^(?:[1-9][A-E])(?:\s+II)?$/i,tipo:"TURMA"},
+    {re:/^H\/A$/i,tipo:"HORA_ATIVIDADE"},
+    {re:/^AETE$/i,tipo:"TREINO"},
+    {re:/^ROBO$/i,tipo:"ROBOTICA"},
+    {re:/^(?:-+|—+)$/,tipo:"SEM_VINCULO"}
+  ];
+  const resultadoCelulas=[],blocos=[],professores=extrairProfessores(resultado);
   resultado.paginasItens.forEach((grupos,pagina)=>{
     const cabecalhos=[];
     grupos.forEach(g=>{
-      const hor=g.itens.filter(i=>/^Hor$/i.test(i.texto)).sort((a,b)=>a.x-b.x);
-      hor.forEach((item,indice)=>{
-        const proximoX=hor[indice+1]?.x??Infinity;
-        const diasNaLinha=g.itens.filter(i=>dias.includes(i.texto)&&i.x>item.x&&i.x<proximoX);
-        if(diasNaLinha.length>=4&&!cabecalhos.some(c=>Math.abs(c.x-item.x)<8&&Math.abs(c.y-g.y)<3)){
-          cabecalhos.push({x:item.x,y:g.y,dias:diasNaLinha.map(i=>({dia:nomesDias[i.texto],x:i.x}))});
-        }
+      const hors=g.itens.filter(i=>/^Hor$/i.test(i.texto));
+      hors.forEach(item=>{
+        const dias=g.itens.filter(i=>["Seg","Ter","Qua","Qui","Sex"].includes(i.texto)&&i.x>item.x);
+        if(dias.length>=4&&!cabecalhos.some(c=>Math.abs(c.x-item.x)<8&&Math.abs(c.y-g.y)<3))
+          cabecalhos.push({x:item.x,y:g.y,dias:dias.map(i=>({dia:nomesDias[i.texto],rotulo:i.texto,x:i.x})).sort((a,b)=>a.x-b.x)});
       });
     });
     cabecalhos.sort((a,b)=>a.x-b.x);
     cabecalhos.forEach((cab,idx)=>{
-      const limiteEsq=cab.x-8, limiteDir=cabecalhos[idx+1]?.x-8??Infinity;
-      const linhasPeriodos=grupos.filter(g=>g.itens.some(i=>/^0?[1-6][º°o]?$/.test(i.texto))).map(g=>({y:g.y,itens:g.itens}));
-      let professor="";
-      const candidatas=grupos.filter(g=>g.y>cab.y&&g.y-cab.y<=38).flatMap(g=>g.itens)
-        .filter(i=>i.x>=cab.x-55&&i.x<limiteDir&&i.y>cab.y&&
-          !/^(Hor|Seg|Ter|Qua|Qui|Sex)$/i.test(i.texto)&&!/^(0?[1-6][º°o]?)$/.test(i.texto));
-      if(candidatas.length){
-        const yNome=Math.min(...candidatas.map(i=>i.y));
-        const itensNome=candidatas.filter(i=>Math.abs(i.y-yNome)<=2).sort((a,b)=>a.x-b.x);
-        professor=itensNome.map(i=>i.texto).join(" ").replace(/\s+/g," ").trim();
+      const limiteEsq=cab.x-8,limiteDir=cabecalhos[idx+1]?.x-8??Infinity;
+      const nomeProfessor=professores.filter(p=>p.pagina===pagina+1&&p.x>=cab.x-8&&p.x<=cab.x+8)
+        .sort((a,b)=>Math.abs(a.y-cab.y)-Math.abs(b.y-cab.y))[0]?.nome||"";
+      const linhasPeriodos=grupos.filter(g=>g.y<cab.y&&g.y>cab.y-230&&g.itens.some(i=>/^0?[1-6][º°o]?$/.test(i.texto)));
+      const periodosOrdenados=[...new Map(linhasPeriodos.map(g=>[Math.round(g.y),g])).values()].sort((a,b)=>b.y-a.y);
+      const seis=periodosOrdenados.slice(0,12);
+      blocos.push({pagina:pagina+1,bloco:idx+1,professor:nomeProfessor,periodosDetectados:seis.length});
+      for(let linhaIndex=0;linhaIndex<12;linhaIndex++){
+        const linha=seis[linhaIndex];
+        const turno=linhaIndex<6?"manhã":"tarde";
+        const periodo=(linhaIndex%6)+1;
+        const faixa=horarios[turno][periodo-1];
+        const itemPeriodo=linha?.itens.find(i=>/^0?[1-6][º°o]?$/.test(i.texto)&&i.x>=limiteEsq-12&&i.x<limiteDir);
+        for(const col of cab.dias){
+          const candidatos=linha?linha.itens.filter(i=>i.x>=col.x-34&&i.x<col.x+34&&i!==itemPeriodo):[];
+          const textos=candidatos.filter(i=>!/^(0?[1-6][º°o]?)$/.test(i.texto)).sort((a,b)=>a.x-b.x);
+          let bruto=textos.map(i=>i.texto).join(" ").replace(/\s+/g," ").trim().toUpperCase();
+          if(!bruto)bruto=""; 
+          const classificado=valoresConhecidos.find(v=>v.re.test(bruto));
+          let tipo=classificado?.tipo|| (bruto?"DESCONHECIDO":"SEM_VINCULO");
+          let turma=(tipo==="TURMA"||tipo==="ROBOTICA")?bruto:"";
+          const origem=textos[0]?{x:textos[0].x,y:textos[0].y}:null;
+          resultadoCelulas.push({
+            professor:nomeProfessor||"PROFESSOR_NÃO_RECONHECIDO",turma,tipo,valorOriginal:bruto||"(sem texto)",
+            dia:col.dia,periodo,turno,inicio:faixa[0],fim:faixa[1],
+            componente:"A confirmar",origem:"individual",pagina:pagina+1,bloco:idx+1,
+            x:origem?.x??col.x,y:origem?.y??linha?.y??cab.y
+          });
+        }
       }
-      if(!professor) return;
-      linhasPeriodos.forEach(linha=>{
-        if(linha.y>=cab.y)return;
-        const itemPeriodo=linha.itens.find(i=>/^0?[1-6][º°o]?$/.test(i.texto)&&i.x>=limiteEsq-10&&i.x<limiteDir);
-        if(!itemPeriodo)return;
-        const numero=parseInt(itemPeriodo.texto,10);
-        if(numero<1||numero>6)return;
-        cab.dias.forEach(col=>{
-          const candidatos=linha.itens.filter(i=>i.x>=limiteEsq-2&&i.x<limiteDir&&Math.abs(i.x-col.x)<32&&i.texto!==itemPeriodo.texto);
-          if(!candidatos.length)return;
-          const celula=candidatos.sort((a,b)=>Math.abs(a.x-col.x)-Math.abs(b.x-col.x))[0];
-          const turma=celula.texto.replace(/\s+/g," ").trim().toUpperCase();
-          if(!turmaValida.test(turma))return;
-          const faixa=horarios[numero-1];
-          aulas.push({dia:col.dia,inicio:faixa[0],fim:faixa[1],turma,componente:"A confirmar",professor,turno:"tarde",origem:"individual",pagina:pagina+1,periodo:numero});
-        });
-      });
     });
   });
-  const unicas=new Map();
-  aulas.forEach(a=>unicas.set([a.dia,a.inicio,a.turma,a.professor].join("|"),a));
-  return [...unicas.values()];
+  const nomes=[...new Set(professores.map(p=>normalizarNomeProfessor(p.nome)))].filter(Boolean);
+  const esperados=27;
+  const auditoria={
+    professoresDetectados:nomes.length,
+    professores:professores.map(p=>({nome:p.nome,pagina:p.pagina,x:Math.round(p.x),y:Math.round(p.y)})),
+    blocos:blocos.length,
+    celulasEsperadas:blocos.length*60,
+    celulasClassificadas:resultadoCelulas.length,
+    contagemPorTipo:resultadoCelulas.reduce((acc,c)=>{acc[c.tipo]=(acc[c.tipo]||0)+1;return acc;},{}),
+    desconhecidas:resultadoCelulas.filter(c=>c.tipo==="DESCONHECIDO"),
+    periodosFaltantes:blocos.filter(b=>b.periodosDetectados<12),
+    tentativas:1,
+    metaProfessores:esperados
+  };
+  return {aulas:resultadoCelulas.filter(c=>["TURMA","ROBOTICA","HORA_ATIVIDADE","TREINO"].includes(c.tipo)),celulas:resultadoCelulas,auditoria};
 }
 function mostrarGradeConvertida(aulas){
   previsualizacaoLeitura.innerHTML="";
