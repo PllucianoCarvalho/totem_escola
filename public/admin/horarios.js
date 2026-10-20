@@ -183,13 +183,14 @@ function converterRelatorioIndividual(resultado){
     });
     cabecalhos.sort((a,b)=>a.x-b.x);
     cabecalhos.forEach((cab,idx)=>{
-      const limiteDir=cabecalhos[idx+1]?.x-8??Infinity;
+      const limiteEsq=cabecalhos[idx-1]?(cabecalhos[idx-1].x+cab.x)/2:-Infinity;
+      const limiteDir=cabecalhos[idx+1]?(cab.x+cabecalhos[idx+1].x)/2:Infinity;
       const pertoNome=grupos.filter(g=>g.y>cab.y&&g.y-cab.y<=40);
       let professor="";
       if(pertoNome.length){
         const yNome=Math.min(...pertoNome.map(g=>g.y));
         professor=pertoNome.filter(g=>Math.abs(g.y-yNome)<=2).flatMap(g=>g.itens)
-          .filter(i=>i.x>=cab.x-45&&i.x<limiteDir&&!/^(Hor|Seg|Ter|Qua|Qui|Sex|0?[1-6][º°o]?)$/i.test(i.texto))
+          .filter(i=>i.x>=limiteEsq&&i.x<limiteDir&&!/^(Hor|Seg|Ter|Qua|Qui|Sex|0?[1-6][º°o]?)$/i.test(i.texto))
           .sort((a,b)=>a.x-b.x).map(i=>i.texto).join(" ").replace(/\s+/g," ").trim();
       }
       if(professor)professores.push({nome:professor,pagina:pagina+1,bloco:idx+1,x:cab.x,y:cab.y});
