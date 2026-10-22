@@ -22,3 +22,10 @@
 .botao-voltar-topo:hover{filter:brightness(.92);transform:translateY(-2px)}
 .botao-voltar-topo:focus-visible{outline:3px solid #efcc00;outline-offset:3px}
 @media(max-width:480px){.botao-voltar-topo{right:12px;bottom:12px;padding:12px 14px}.botao-voltar-topo span{font-size:13px}}
+
+.config-grade{display:grid;grid-template-columns:repeat(3,minmax(180px,1fr));gap:12px;margin:18px 0}
+.config-grade label{margin:0;font-size:14px}
+.config-grade input,.config-grade select{display:block;width:100%;margin-top:7px;padding:11px;border:1px solid #cbd3df;border-radius:8px;background:#fff;color:#172033}
+#statusConfiguracao{min-height:20px;font-weight:700;color:#1749d1}
+@media(max-width:800px){.config-grade{grid-template-columns:repeat(2,minmax(0,1fr))}}
+@media(max-width:480px){.config-grade{grid-template-columns:1fr}}
