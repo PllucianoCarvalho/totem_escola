@@ -65,6 +65,7 @@ const imagensPath = path.join(dadosPath, "imagens");
 const caminhoConfigImagens = path.join(dadosPath, "imagem.json");
 const horariosPath = path.join(dadosPath, "horarios");
 const caminhoHorarios = path.join(dadosPath, "horarios.json");
+const caminhoConfiguracaoHorarios = path.join(dadosPath, "horarios-config.json");
 const caminhoPdfHorarios = path.join(horariosPath, "horarios-professores.pdf");
 const caminhoDocumentosHorarios = path.join(horariosPath, "documentos.json");
 
@@ -113,14 +114,35 @@ const uploadPdfHorarios = multer({
     }
 });
 
+const CONFIG_HORARIOS_PADRAO = {
+    tipoEscola: "regular",
+    inicioAulas: "07:00",
+    duracaoAula: 50,
+    inicioIntervalo: "09:30",
+    duracaoIntervalo: 20
+};
+
+function lerConfiguracaoHorarios() {
+    if (!fs.existsSync(caminhoConfiguracaoHorarios)) return { ...CONFIG_HORARIOS_PADRAO };
+    try {
+        const dados = JSON.parse(fs.readFileSync(caminhoConfiguracaoHorarios, "utf8"));
+        return { ...CONFIG_HORARIOS_PADRAO, ...dados };
+    } catch {
+        return { ...CONFIG_HORARIOS_PADRAO };
+    }
+}
+
 function lerHorarios() {
-    if (!fs.existsSync(caminhoHorarios)) return { pdf: null, atualizadoEm: null, professores: [] };
+    if (!fs.existsSync(caminhoHorarios)) {
+        return { pdf: null, atualizadoEm: null, professores: [], aulas: [], configuracao: lerConfiguracaoHorarios() };
+    }
     const dados = JSON.parse(fs.readFileSync(caminhoHorarios, "utf8"));
     return {
         pdf: dados.pdf || null,
         atualizadoEm: dados.atualizadoEm || null,
         professores: Array.isArray(dados.professores) ? dados.professores : [],
-        aulas: Array.isArray(dados.aulas) ? dados.aulas : []
+        aulas: Array.isArray(dados.aulas) ? dados.aulas : [],
+        configuracao: lerConfiguracaoHorarios()
     };
 }
 
@@ -267,6 +289,32 @@ app.get("/api/horarios", (req, res) => {
         console.error("Erro ao ler horários:", error);
         res.status(500).json({ erro: "Não foi possível carregar os horários." });
     }
+});
+app.put("/api/horarios/configuracao", protegerApi, (req, res) => {
+    const entrada = req.body || {};
+    const tipoEscola = String(entrada.tipoEscola || "").trim();
+    const inicioAulas = String(entrada.inicioAulas || "").trim();
+    const inicioIntervalo = String(entrada.inicioIntervalo || "").trim();
+    const duracaoAula = Number(entrada.duracaoAula);
+    const duracaoIntervalo = Number(entrada.duracaoIntervalo);
+    const horaValida = valor => /^([01]\d|2[0-3]):[0-5]\d$/.test(valor);
+
+    if (!["regular", "integral"].includes(tipoEscola)) {
+        return res.status(400).json({ erro: "Selecione escola regular ou integral." });
+    }
+    if (!horaValida(inicioAulas) || !horaValida(inicioIntervalo)) {
+        return res.status(400).json({ erro: "Informe horários válidos para o início das aulas e o intervalo." });
+    }
+    if (!Number.isInteger(duracaoAula) || duracaoAula < 30 || duracaoAula > 120) {
+        return res.status(400).json({ erro: "A duração da aula deve estar entre 30 e 120 minutos." });
+    }
+    if (!Number.isInteger(duracaoIntervalo) || duracaoIntervalo < 5 || duracaoIntervalo > 120) {
+        return res.status(400).json({ erro: "A duração do intervalo deve estar entre 5 e 120 minutos." });
+    }
+
+    const configuracao = { tipoEscola, inicioAulas, duracaoAula, inicioIntervalo, duracaoIntervalo };
+    fs.writeFileSync(caminhoConfiguracaoHorarios, JSON.stringify(configuracao, null, 2), "utf8");
+    res.json({ sucesso: true, configuracao });
 });
 
 function lerDocumentosHorarios() {
