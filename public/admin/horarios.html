@@ -17,8 +17,35 @@
       <h1>Horários dos professores</h1>
       <p>Importe o relatório geral exportado pelo Urânia+ para montar uma prévia da grade escolar.</p>
     </header>
+    <section class="cartao" id="configuracaoHorario">
+      <h2>1. Configurar o funcionamento da escola</h2>
+      <p>Defina o tipo de escola e os horários. A configuração será usada para converter os períodos importados em horários reais.</p>
+      <div class="config-grade">
+        <label for="tipoEscola">Tipo de escola
+          <select id="tipoEscola">
+            <option value="regular">Escola regular</option>
+            <option value="integral">Escola em tempo integral</option>
+          </select>
+        </label>
+        <label for="inicioAulas">Horário de início das aulas
+          <input id="inicioAulas" type="time" value="07:00" required>
+        </label>
+        <label for="duracaoAula">Duração de cada aula (minutos)
+          <input id="duracaoAula" type="number" min="30" max="120" step="5" value="50" required>
+        </label>
+        <label for="inicioIntervalo">Início do intervalo para lanche
+          <input id="inicioIntervalo" type="time" value="09:30" required>
+        </label>
+        <label for="duracaoIntervalo">Duração do intervalo (minutos)
+          <input id="duracaoIntervalo" type="number" min="5" max="120" step="5" value="20" required>
+        </label>
+      </div>
+      <button id="salvarConfiguracao" type="button">Salvar configuração de horários</button>
+      <p id="statusConfiguracao" role="status"></p>
+      <p class="ajuda">Valores iniciais sugeridos: aulas de 50 minutos e intervalo de 20 minutos. Ajuste para os horários reais da escola. O tipo integral fica disponível desde já; a grade usa os períodos presentes no relatório importado.</p>
+    </section>
     <section class="cartao">
-      <h2>1. Importar relatório geral do Urânia+</h2>
+      <h2>2. Importar relatório geral do Urânia+</h2>
       <p>Selecione o HTML exportado pelo Urânia+. Se o programa salvar uma página HTML com extensão .xls, também tentaremos ler esse arquivo.</p>
       <form id="relatorioForm">
         <label for="relatorioGeral">Relatório geral de turmas (HTML ou XLS exportado pelo Urânia+)</label>
@@ -31,7 +58,7 @@
     </section>
     <section class="cartao">
       <div class="titulo-linha">
-        <div><h2>2. Revisar os registros</h2><p>Os campos são editáveis. Use uma linha para cada aula/atribuição.</p></div>
+        <div><h2>3. Revisar os registros</h2><p>Os campos são editáveis. Use uma linha para cada aula/atribuição.</p></div>
         <button id="adicionarLinha" class="secundario" type="button">+ Adicionar linha</button>
       </div>
       <div class="tabela-wrap">
@@ -44,7 +71,7 @@
       <p id="statusSalvar" role="status"></p>
     </section>
     <section class="cartao" id="consultaGrade">
-      <h2>3. Consultar grade de aulas</h2>
+      <h2>4. Consultar grade de aulas</h2>
       <p>Filtre os horários publicados por professor, turma, componente curricular ou dia da semana. Os filtros podem ser combinados.</p>
       <div class="filtros-grade">
         <label>Professor <input id="filtroProfessor" type="search" placeholder="Nome do professor"></label>
@@ -62,7 +89,7 @@
       </div>
     </section>
     <section class="cartao">
-      <h2>4. Última versão publicada</h2>
+      <h2>5. Última versão publicada</h2>
       <p id="estadoAtual">Carregando...</p>
     </section>
   </main>
