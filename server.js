@@ -326,7 +326,9 @@ app.put("/api/horarios", protegerApi, (req, res) => {
         dia: String(item.dia || "").trim(),
         inicio: String(item.inicio || "").trim(),
         fim: String(item.fim || "").trim(),
-        turno: String(item.turno || "").trim()
+        turno: String(item.turno || "").trim(),
+        periodo: String(item.periodo || "").trim(),
+        origem: String(item.origem || "").trim()
     }));
 
     if (normalizados.some(item => !item.professor || !item.turma || !item.componente)) {
@@ -355,6 +357,8 @@ app.put("/api/horarios", protegerApi, (req, res) => {
             componente: String(item.componente || "").trim(),
             professor: String(item.professor || "").trim(),
             turno: String(item.turno || "").trim(),
+            horario: String(item.horario || "").trim(),
+            periodo: String(item.periodo || "").trim(),
             origem: String(item.origem || "").trim()
         };
     }).filter(item => item.professor && item.turma && item.componente);
