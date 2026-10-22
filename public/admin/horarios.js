@@ -1,369 +1,162 @@
-const pdfForm=document.getElementById("pdfForm");
-const pdfMatutino=document.getElementById("pdfMatutino");
-const pdfVespertino=document.getElementById("pdfVespertino");
-const pdfIndividual=document.getElementById("pdfIndividual");
-const estadoDocumentos=document.getElementById("estadoDocumentos");
-const previsualizacaoLeitura=document.getElementById("previsualizacaoLeitura");
-const estadoConversao=document.getElementById("estadoConversao");
-const statusPdf=document.getElementById("statusPdf");
-const linhas=document.getElementById("linhasHorarios");
-const statusSalvar=document.getElementById("statusSalvar");
-const estadoAtual=document.getElementById("estadoAtual");
-if(window.pdfjsLib)pdfjsLib.GlobalWorkerOptions.workerSrc="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js";
-let registros=[];
-let aulasPublicadas=[];
-let pdfSelecionado=null;
-let documentosEnviados={individual:null};
+const form = document.getElementById("relatorioForm");
+const arquivoInput = document.getElementById("relatorioGeral");
+const statusImportacao = document.getElementById("statusImportacao");
+const previa = document.getElementById("previsualizacaoLeitura");
+const estadoConversao = document.getElementById("estadoConversao");
+const linhas = document.getElementById("linhasHorarios");
+const statusSalvar = document.getElementById("statusSalvar");
+const estadoAtual = document.getElementById("estadoAtual");
+let registros = [];
+let aulasPublicadas = [];
 
-function renderizar(){
-  linhas.innerHTML="";
-  if(!registros.length){linhas.innerHTML='<tr><td colspan="5" class="vazio">Nenhum registro. Importe um PDF ou adicione uma linha.</td></tr>';return;}
-  registros.forEach((r,i)=>{
-    const tr=document.createElement("tr");
-    [["professor","Professor"],["turma","Turma"],["componente","Componente"],["horario","Horário letivo"]].forEach(([key,label])=>{
-      const td=document.createElement("td"),input=document.createElement("input");
-      input.value=r[key]||"";input.placeholder=label;input.setAttribute("aria-label",label);
-      input.addEventListener("input",()=>r[key]=input.value);td.appendChild(input);tr.appendChild(td);
+function norm(v) { return String(v || "").normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLocaleLowerCase("pt-BR").trim(); }
+function renderizar() {
+  linhas.innerHTML = "";
+  if (!registros.length) { linhas.innerHTML = '<tr><td colspan="5" class="vazio">Nenhum registro. Importe um relatório ou adicione uma linha manualmente.</td></tr>'; return; }
+  registros.forEach((r, i) => {
+    const tr = document.createElement("tr");
+    [["professor","Professor"],["turma","Turma"],["componente","Componente"],["horario","Dia e período"]].forEach(([key,label]) => {
+      const td = document.createElement("td"), input = document.createElement("input");
+      input.value = r[key] || ""; input.placeholder = label; input.setAttribute("aria-label",label);
+      input.addEventListener("input", () => r[key] = input.value); td.appendChild(input); tr.appendChild(td);
     });
-    const td=document.createElement("td"),btn=document.createElement("button");
-    btn.type="button";btn.className="remover";btn.textContent="Excluir";btn.addEventListener("click",()=>{registros.splice(i,1);renderizar();});
-    td.appendChild(btn);tr.appendChild(td);linhas.appendChild(tr);
+    const td = document.createElement("td"), btn = document.createElement("button");
+    btn.type = "button"; btn.className = "remover"; btn.textContent = "Excluir";
+    btn.addEventListener("click", () => { registros.splice(i,1); renderizar(); });
+    td.appendChild(btn); tr.appendChild(td); linhas.appendChild(tr);
   });
 }
+const filtroProfessor = document.getElementById("filtroProfessor");
+const filtroTurma = document.getElementById("filtroTurma");
+const filtroComponente = document.getElementById("filtroComponente");
+const filtroDia = document.getElementById("filtroDia");
+const resultadosGrade = document.getElementById("resultadosGrade");
+const resultadoFiltros = document.getElementById("resultadoFiltros");
 
-const filtroProfessor=document.getElementById("filtroProfessor");
-const filtroTurma=document.getElementById("filtroTurma");
-const filtroComponente=document.getElementById("filtroComponente");
-const filtroDia=document.getElementById("filtroDia");
-const resultadosGrade=document.getElementById("resultadosGrade");
-const resultadoFiltros=document.getElementById("resultadoFiltros");
-function normalizarFiltro(valor){return String(valor||"").normalize("NFD").replace(/[\u0300-\u036f]/g,"").toLocaleLowerCase("pt-BR").trim();}
-function renderizarConsultaGrade(){
-  if(!resultadosGrade)return;
-  const professor=normalizarFiltro(filtroProfessor.value),turma=normalizarFiltro(filtroTurma.value),componente=normalizarFiltro(filtroComponente.value),dia=filtroDia.value;
-  const filtradas=aulasPublicadas.filter(a=>
-    normalizarFiltro(a.professor).includes(professor)&&
-    normalizarFiltro(a.turma).includes(turma)&&
-    normalizarFiltro(a.componente).includes(componente)&&
-    (!dia||normalizarFiltro(a.dia)===normalizarFiltro(dia))
-  ).sort((a,b)=>String(a.dia||"").localeCompare(String(b.dia||""),"pt-BR")||String(a.inicio||"").localeCompare(String(b.inicio||""))||String(a.turma||"").localeCompare(String(b.turma||""),"pt-BR"));
-  resultadosGrade.innerHTML="";
-  if(!filtradas.length){
-    const tr=document.createElement("tr"),td=document.createElement("td");td.colSpan=6;td.className="vazio";td.textContent=aulasPublicadas.length?"Nenhuma aula corresponde aos filtros selecionados.":"Ainda não há grade de aulas publicada.";tr.appendChild(td);resultadosGrade.appendChild(tr);
-  }else{
-    filtradas.forEach(a=>{
-      const tr=document.createElement("tr");
-      [a.dia||"—",a.inicio&&a.fim?a.inicio+"–"+a.fim:(a.horario||"—"),a.turma||"—",a.componente||"—",a.professor||"—",a.turno||"—"].forEach(valor=>{const td=document.createElement("td");td.textContent=valor;tr.appendChild(td);});
-      resultadosGrade.appendChild(tr);
-    });
-  }
-  resultadoFiltros.textContent=filtradas.length+" de "+aulasPublicadas.length+" aula(s) exibida(s).";
+function renderizarConsulta() {
+  const p = norm(filtroProfessor.value), t = norm(filtroTurma.value), c = norm(filtroComponente.value), d = filtroDia.value;
+  const items = aulasPublicadas.filter(a => norm(a.professor).includes(p) && norm(a.turma).includes(t) && norm(a.componente).includes(c) && (!d || norm(a.dia) === norm(d)))
+    .sort((a,b) => String(a.dia||"").localeCompare(String(b.dia||""),"pt-BR") || Number(a.periodo||0)-Number(b.periodo||0) || String(a.turma||"").localeCompare(String(b.turma||""),"pt-BR"));
+  resultadosGrade.innerHTML = "";
+  if (!items.length) {
+    const tr=document.createElement("tr"), td=document.createElement("td"); td.colSpan=6; td.className="vazio";
+    td.textContent=aulasPublicadas.length?"Nenhuma aula corresponde aos filtros selecionados.":"Ainda não há grade de aulas publicada.";
+    tr.appendChild(td); resultadosGrade.appendChild(tr);
+  } else items.forEach(a => {
+    const tr=document.createElement("tr"), horario=a.horario || (a.inicio&&a.fim?a.inicio+"–"+a.fim:a.periodo?a.periodo+"º período":"—");
+    [a.dia||"—",horario,a.turma||"—",a.componente||"—",a.professor||"—",a.turno||"A confirmar"].forEach(v=>{const td=document.createElement("td");td.textContent=v;tr.appendChild(td);});
+    resultadosGrade.appendChild(tr);
+  });
+  resultadoFiltros.textContent=items.length+" de "+aulasPublicadas.length+" aula(s) exibida(s).";
 }
-function prepararFiltroDias(){
-  const ordemDias=["segunda-feira","terça-feira","quarta-feira","quinta-feira","sexta-feira","sábado","domingo"];
-  const dias=[...new Set(aulasPublicadas.map(a=>a.dia).filter(Boolean))].sort((a,b)=>ordemDias.indexOf(normalizarFiltro(a))-ordemDias.indexOf(normalizarFiltro(b)));
+function prepararDias() {
+  const ordem=["segunda-feira","terça-feira","quarta-feira","quinta-feira","sexta-feira","sábado","domingo"];
+  const dias=[...new Set(aulasPublicadas.map(a=>a.dia).filter(Boolean))].sort((a,b)=>ordem.indexOf(norm(a))-ordem.indexOf(norm(b)));
   filtroDia.innerHTML='<option value="">Todos os dias</option>';
-  dias.forEach(dia=>{const option=document.createElement("option");option.value=dia;option.textContent=dia;filtroDia.appendChild(option);});
-  renderizarConsultaGrade();
+  dias.forEach(d=>{const o=document.createElement("option");o.value=d;o.textContent=d;filtroDia.appendChild(o);});
+  renderizarConsulta();
 }
-[filtroProfessor,filtroTurma,filtroComponente].forEach(campo=>campo.addEventListener("input",renderizarConsultaGrade));
-filtroDia.addEventListener("change",renderizarConsultaGrade);
-document.getElementById("limparFiltros").addEventListener("click",()=>{
-  filtroProfessor.value="";filtroTurma.value="";filtroComponente.value="";filtroDia.value="";renderizarConsultaGrade();
-});
+[filtroProfessor,filtroTurma,filtroComponente].forEach(x=>x.addEventListener("input",renderizarConsulta));
+filtroDia.addEventListener("change",renderizarConsulta);
+document.getElementById("limparFiltros").addEventListener("click",()=>{filtroProfessor.value="";filtroTurma.value="";filtroComponente.value="";filtroDia.value="";renderizarConsulta();});
 
-function interpretarLinha(texto){
-  const limpa=texto.replace(/\s+/g," ").trim();
-  const turma=(limpa.match(/\b\d+\s*[º°o]?\s*[A-Z]\b/i)||[])[0]||"";
-  const sala=(limpa.match(/\b(?:sala|laboratório|lab\.?)[\s:-]*[\w.-]+/i)||[])[0]||"";
-  const horario=(limpa.match(/\b(?:[1-6]ª?\s*aula|\d{1,2}:\d{2}\s*[-–aà]\s*\d{1,2}:\d{2})\b/i)||[])[0]||"";
-  const partes=limpa.split(/\s{2,}|\t+/).map(p=>p.trim()).filter(Boolean);
-  let professor=partes[0]||limpa,componente="";
-  if(partes.length>=2)componente=partes.find(p=>p!==professor&&p!==turma&&p!==sala&&p!==horario)||"";
-  return {professor,sala,turma,componente,horario,linhaOriginal:limpa};
+function cellText(cell) { return String(cell?.textContent||"").replace(/\u00a0/g," ").replace(/\s+/g," ").trim(); }
+function diaDe(rotulo) { return ({seg:"segunda-feira",ter:"terça-feira",qua:"quarta-feira",qui:"quinta-feira",sex:"sexta-feira"})[String(rotulo).toLowerCase()] || ""; }
+function lerAula(valor) {
+  const v=String(valor||"").replace(/\u00a0/g," ").replace(/\s+/g," ").trim();
+  if (!v || /^[-—]+$/.test(v)) return null;
+  const m=v.match(/^(.*?)\s*\(([^()]*)\)\s*$/);
+  if (!m || !m[1].trim() || !m[2].trim()) return {erro:v};
+  return {componente:m[1].trim(),professor:m[2].trim(),original:v};
 }
-async function extrairTexto(file){
-  if(!window.pdfjsLib)throw new Error("A biblioteca de leitura de PDF não carregou. Verifique a conexão e tente novamente.");
-  const buffer=await file.arrayBuffer(),pdf=await pdfjsLib.getDocument({data:buffer}).promise;
-  const linhasTexto=[];
-  for(let p=1;p<=pdf.numPages;p++){
-    const pagina=await pdf.getPage(p),conteudo=await pagina.getTextContent();
-    let atual="",ultimoY=null;
-    for(const item of conteudo.items){
-      const y=item.transform?item.transform[5]:null;
-      if(ultimoY!==null&&y!==null&&Math.abs(y-ultimoY)>3){if(atual.trim())linhasTexto.push(atual.trim());atual="";}
-      atual+=item.str+"  ";ultimoY=y;
-    }
-    if(atual.trim())linhasTexto.push(atual.trim());
+async function converter(file) {
+  const bytes=await file.arrayBuffer();
+  const source=new TextDecoder("windows-1252").decode(bytes);
+  const doc=new DOMParser().parseFromString(source,"text/html");
+  const table=doc.querySelector("table");
+  if(!table) throw new Error("Não encontrei uma tabela HTML. Exporte novamente o relatório geral do Urânia+.");
+  const rows=[...table.querySelectorAll("tr")];
+  if(rows.length<2) throw new Error("A tabela do relatório está vazia.");
+  const header=[...rows[0].cells].map(cellText), turmas=header.slice(2).filter(Boolean);
+  if(!turmas.length) throw new Error("Não encontrei as turmas no cabeçalho.");
+  const aulas=[], excecoes=[], dias=new Set(), periodos=new Set();
+  let diaAtual="";
+  for(let i=1;i<rows.length;i++){
+    const cells=[...rows[i].cells]; if(!cells.length) continue;
+    const dia=diaDe(cellText(cells[0])), desloc=dia?1:0;
+    if(dia) diaAtual=dia;
+    if(!diaAtual) continue;
+    const rotulo=cellText(cells[desloc]), match=rotulo.match(/^0*(\d{1,2})\s*[º°o]?$/i);
+    if(!match) continue;
+    const periodo=Number(match[1]); if(!periodo || periodo>20) continue;
+    periodos.add(periodo); dias.add(diaAtual);
+    const aulasDaLinha=cells.slice(desloc+1);
+    turmas.forEach((turma,j)=>{
+      const valor=cellText(aulasDaLinha[j]), aula=lerAula(valor);
+      if(!aula) return;
+      if(aula.erro){excecoes.push({dia:diaAtual,periodo,turma,valor});return;}
+      aulas.push({professor:aula.professor,turma,componente:aula.componente,
+        horario:diaAtual+" · "+String(periodo).padStart(2,"0")+"º período",dia:diaAtual,
+        inicio:"",fim:"",turno:"A confirmar",periodo:String(periodo),origem:"urania-html",valorOriginal:aula.original});
+    });
   }
-  return linhasTexto.filter(l=>l.replace(/\s/g,"").length>2);
+  if(!aulas.length) throw new Error("Nenhuma célula no padrão DISCIPLINA (PROFESSOR) foi encontrada.");
+  return {aulas,turmas,dias:[...dias],periodos:[...periodos].sort((a,b)=>a-b),excecoes};
 }
-async function extrairTextoPdf(file){
-  if(!window.pdfjsLib)throw new Error("A biblioteca PDF.js não carregou.");
-  const pdf=await pdfjsLib.getDocument({data:await file.arrayBuffer()}).promise;
-  const paginas=[],paginasItens=[];
-  for(let n=1;n<=pdf.numPages;n++){
-    const pagina=await pdf.getPage(n),conteudo=await pagina.getTextContent();
-    const itens=conteudo.items.filter(i=>i.str&&i.str.trim()).map(i=>({texto:i.str.trim(),x:i.transform?i.transform[4]:0,y:i.transform?i.transform[5]:0}));
-    const grupos=[];
-    itens.sort((a,b)=>Math.abs(b.y-a.y)>2?b.y-a.y:a.x-b.x).forEach(item=>{
-      let grupo=grupos.find(g=>Math.abs(g.y-item.y)<=2);
-      if(!grupo){grupo={y:item.y,itens:[]};grupos.push(grupo);}
-      grupo.itens.push(item);
-    });
-    grupos.sort((a,b)=>b.y-a.y);
-    grupos.forEach(g=>g.itens.sort((a,b)=>a.x-b.x));
-    paginasItens.push(grupos);
-    paginas.push(grupos.map(g=>g.itens.map(i=>i.texto).join("  ")).join("\n"));
+function mostrarPrevia(r) {
+  previa.innerHTML="";
+  const sec=document.createElement("section"), resumo=document.createElement("p");
+  resumo.textContent=r.aulas.length+" aulas identificadas · "+r.turmas.length+" turmas · "+r.dias.length+" dias · "+r.periodos.length+" períodos. Horários de relógio ainda não atribuídos.";
+  sec.appendChild(resumo);
+  const busca=document.createElement("input");busca.type="search";busca.placeholder="Filtrar por professor, turma, componente ou período";busca.setAttribute("aria-label","Filtrar prévia");
+  const details=document.createElement("details");details.open=true;
+  const sum=document.createElement("summary");sum.textContent="Conferir aulas identificadas";details.appendChild(sum);
+  const table=document.createElement("table"),thead=document.createElement("thead"),tbody=document.createElement("tbody");
+  thead.innerHTML="<tr><th>Professor</th><th>Dia</th><th>Período</th><th>Turma</th><th>Componente</th></tr>";table.appendChild(thead);
+  function draw(){
+    tbody.innerHTML="";const term=norm(busca.value), filtered=r.aulas.filter(a=>norm([a.professor,a.turma,a.componente,a.horario].join(" ")).includes(term));
+    filtered.slice(0,1000).forEach(a=>{const tr=document.createElement("tr");[a.professor,a.dia,a.periodo+"º",a.turma,a.componente].forEach(v=>{const td=document.createElement("td");td.textContent=v;tr.appendChild(td);});tbody.appendChild(tr);});
+    if(filtered.length>1000){const tr=document.createElement("tr"),td=document.createElement("td");td.colSpan=5;td.textContent="Exibindo 1.000 de "+filtered.length+" aulas; use o filtro.";tr.appendChild(td);tbody.appendChild(tr);}
   }
-  return {paginas,paginasItens,total:pdf.numPages};
+  busca.addEventListener("input",draw);draw();table.appendChild(tbody);details.appendChild(table);sec.append(busca,details);
+  if(r.excecoes.length){
+    const aviso=document.createElement("p");aviso.textContent=r.excecoes.length+" célula(s) não reconhecidas ficaram fora da importação.";sec.appendChild(aviso);
+    const d=document.createElement("details"),s=document.createElement("summary"),ul=document.createElement("ul");s.textContent="Ver exceções (até 100)";d.appendChild(s);
+    r.excecoes.slice(0,100).forEach(e=>{const li=document.createElement("li");li.textContent=e.dia+", período "+e.periodo+", turma "+e.turma+": "+e.valor;ul.appendChild(li);});d.appendChild(ul);sec.appendChild(d);
+  }
+  previa.appendChild(sec);
 }
-function normalizarNomeProfessor(valor){
-  return String(valor||"").normalize("NFD").replace(/[\u0300-\u036f]/g,"").toUpperCase().replace(/[^A-Z0-9 ]/g," ").replace(/\s+/g," ").trim();
-}
-function extrairProfessores(resultado){
-  const professores=[];
-  resultado.paginasItens.forEach((grupos,pagina)=>{
-    const linhasCab=[];
-    grupos.forEach(g=>{
-      const hor=g.itens.filter(i=>/^Hor$/i.test(i.texto)).sort((a,b)=>a.x-b.x);
-      hor.forEach((item,indice)=>{
-        const proximoX=hor[indice+1]?.x??Infinity;
-        const dias=g.itens.filter(i=>["Seg","Ter","Qua","Qui","Sex"].includes(i.texto)&&i.x>item.x&&i.x<proximoX);
-        if(dias.length===5)linhasCab.push({g,hor:[item],dias});
-      });
-    });
-    const cabecalhos=[];
-    linhasCab.forEach(({g,hor})=>hor.forEach(item=>{
-      if(!cabecalhos.some(c=>Math.abs(c.x-item.x)<8&&Math.abs(c.y-g.y)<3))cabecalhos.push({x:item.x,y:g.y});
-    }));
-    cabecalhos.sort((a,b)=>a.x-b.x);
-    cabecalhos.forEach((cab,idx)=>{
-      const limiteEsq= cabecalhos[idx-1] ? (cabecalhos[idx-1].x+cab.x)/2 : -Infinity;
-      const limiteDir= cabecalhos[idx+1] ? (cab.x+cabecalhos[idx+1].x)/2 : Infinity;
-      const linhasAcima=grupos.filter(g=>g.y>cab.y&&g.y-cab.y<=40).sort((a,b)=>a.y-b.y);
-      let nome="";
-      for(const linha of linhasAcima){
-        const textos=linha.itens.filter(i=>i.x>=limiteEsq&&i.x<limiteDir&&
-          !/^(Hor|Seg|Ter|Qua|Qui|Sex|0?[1-6][º°o]?)$/i.test(i.texto));
-        if(textos.length){nome=textos.sort((a,b)=>a.x-b.x).map(i=>i.texto).join(" ").replace(/\s+/g," ").trim();break;}
-      }
-      if(nome&&/[A-Za-zÀ-ÿ]{2}/.test(nome))professores.push({nome,pagina:pagina+1,bloco:idx+1,x:cab.x,y:cab.y});
-    });
-  });
-  const unicos=new Map();
-  professores.forEach(p=>{const chave=normalizarNomeProfessor(p.nome);if(chave&&!unicos.has(chave))unicos.set(chave,p);});
-  return [...unicos.values()];
-}
-function converterRelatorioIndividual(resultado, tentativa=1){
-  const nomesDias={"Seg":"segunda-feira","Ter":"terça-feira","Qua":"quarta-feira","Qui":"quinta-feira","Sex":"sexta-feira"};
-  const horarios={
-    manha:[["07:00","07:50"],["07:50","08:40"],["08:40","09:30"],["09:40","10:30"],["10:30","11:20"],["11:20","12:10"]],
-    tarde:[["12:15","13:05"],["13:05","13:55"],["13:55","14:45"],["14:55","15:45"],["15:45","16:35"],["16:35","17:25"]]
-  };
-  const conhecidos=[
-    {re:/^(?:[1-9][A-E])(?:\s+II)?$/i,tipo:"TURMA"},
-    {re:/^H\/A$/i,tipo:"HORA_ATIVIDADE"},
-    {re:/^AETE$/i,tipo:"TREINO"},
-    {re:/^ROBO$/i,tipo:"ROBOTICA"},
-    {re:/^(?:-+|—+)$/,tipo:"SEM_VINCULO"}
-  ];
-  const celulas=[],blocos=[],professores=[];
-  resultado.paginasItens.forEach((grupos,pagina)=>{
-    const cabecalhos=[];
-    grupos.forEach(g=>{
-      const cabecas=g.itens.filter(i=>/^Hor$/i.test(i.texto)).sort((a,b)=>a.x-b.x);
-      cabecas.forEach((item,indice)=>{
-        const proximoX=cabecas[indice+1]?.x??Infinity;
-        const dias=g.itens.filter(i=>["Seg","Ter","Qua","Qui","Sex"].includes(i.texto)&&i.x>item.x&&i.x<proximoX)
-          .sort((a,b)=>a.x-b.x);
-        if(dias.length===5&&!cabecalhos.some(c=>Math.abs(c.x-item.x)<8&&Math.abs(c.y-g.y)<3))
-          cabecalhos.push({x:item.x,y:g.y,dias:dias.map(i=>({dia:nomesDias[i.texto],rotulo:i.texto,x:i.x}))});
-      });
-    });
-    cabecalhos.sort((a,b)=>a.x-b.x);
-    cabecalhos.forEach((cab,idx)=>{
-      const limiteEsq=cabecalhos[idx-1]?(cabecalhos[idx-1].x+cab.x)/2:-Infinity;
-      const limiteDir=cabecalhos[idx+1]?(cab.x+cabecalhos[idx+1].x)/2:Infinity;
-      const janelaNome=tentativa===1?40:tentativa===2?70:110;
-      const linhasNome=grupos.filter(g=>g.y>cab.y&&g.y-cab.y<=janelaNome).sort((a,b)=>a.y-b.y);
-      let professor="";
-      for(const grupoNome of linhasNome){
-        const partesNome=grupoNome.itens
-          .filter(i=>i.x>=limiteEsq&&i.x<limiteDir)
-          .filter(i=>/^[A-Za-zÀ-ÿ][A-Za-zÀ-ÿ .'-]*$/.test(i.texto.trim()))
-          .filter(i=>!/^(Hor|Seg|Ter|Qua|Qui|Sex|H\/A|HA|AETE|ROBO|------|[1-9][A-E])$/i.test(i.texto.trim()));
-        if(partesNome.length){
-          professor=partesNome.sort((a,b)=>a.x-b.x).map(i=>i.texto).join(" ").replace(/\s+/g," ").trim();
-          if(professor.length>=3)break;
-          professor="";
-        }
-      }
-      if(professor)professores.push({nome:professor,pagina:pagina+1,bloco:idx+1,x:cab.x,y:cab.y});
-      const linhasPeriodos=grupos.filter(g=>g.y<cab.y&&g.y>cab.y-240&&g.itens.some(i=>/^0?[1-6][º°o]?$/.test(i.texto)))
-        .sort((a,b)=>b.y-a.y);
-      const periodos=[];
-      linhasPeriodos.forEach(g=>{
-        const token=g.itens.find(i=>/^0?[1-6][º°o]?$/.test(i.texto)&&i.x>=cab.x-15&&i.x<limiteDir);
-        if(token&&!periodos.some(p=>Math.abs(p.y-g.y)<2))periodos.push({y:g.y,numero:Number.parseInt(token.texto,10),itens:g.itens});
-      });
-      const doze=periodos.slice(0,12);
-      blocos.push({pagina:pagina+1,bloco:idx+1,professor:professor||"PROFESSOR_NÃO_RECONHECIDO",periodosDetectados:doze.length});
-      const centros=cab.dias.map(d=>d.x);
-      const limites=centros.map((x,i)=>({esq:i===0?cab.x+20:(centros[i-1]+x)/2,dir:i===centros.length-1?limiteDir:(x+centros[i+1])/2}));
-      for(let n=0;n<12;n++){
-        const linha=doze[n];
-        const turno=n<6?"manhã":"tarde";
-        const periodo=(n%6)+1;
-        const [inicio,fim]=horarios[turno==="manhã"?"manha":"tarde"][periodo-1];
-        cab.dias.forEach((col,diaIdx)=>{
-          const itens=linha?linha.itens.filter(i=>i.x>=limites[diaIdx].esq&&i.x<limites[diaIdx].dir&&!/^0?[1-6][º°o]?$/.test(i.texto)):[];
-          const bruto=itens.map(i=>i.texto).join(" ").replace(/\s+/g," ").trim().toUpperCase();
-          const normal=bruto.replace(/\s+/g," ");
-          const classificado=conhecidos.find(v=>v.re.test(normal));
-          const tipo=classificado?.tipo||(normal?"DESCONHECIDO":"SEM_VINCULO");
-          const turma=tipo==="TURMA"||tipo==="ROBOTICA"?normal:"";
-          celulas.push({
-            professor:professor||"PROFESSOR_NÃO_RECONHECIDO",turma,tipo,valorOriginal:normal||"(sem texto)",
-            dia:col.dia,periodo,turno,inicio,fim,componente:"A confirmar",origem:"individual",
-            pagina:pagina+1,bloco:idx+1,x:itens[0]?.x??col.x,y:itens[0]?.y??linha?.y??cab.y
-          });
-        });
-      }
-    });
-  });
-  const nomesUnicos=new Map();
-  professores.forEach(p=>{
-    const nome=String(p.nome).normalize("NFD").replace(/[\u0300-\u036f]/g,"").toUpperCase().replace(/[^A-Z0-9 ]/g," ").replace(/\s+/g," ").trim();
-    if(nome&&!nomesUnicos.has(nome))nomesUnicos.set(nome,p);
-  });
-  const auditoria={
-    professoresDetectados:nomesUnicos.size,metaProfessores:27,
-    professores:[...nomesUnicos.values()],
-    blocos:blocos.length,celulasEsperadas:blocos.length*60,celulasClassificadas:celulas.length,
-    contagemPorTipo:celulas.reduce((acc,c)=>{acc[c.tipo]=(acc[c.tipo]||0)+1;return acc;},{}),
-    desconhecidas:celulas.filter(c=>c.tipo==="DESCONHECIDO"),
-    periodosFaltantes:blocos.filter(b=>b.periodosDetectados<12),
-    blocosDetalhados:blocos
-  };
-  return {aulas:celulas.filter(c=>["TURMA","ROBOTICA","HORA_ATIVIDADE","TREINO"].includes(c.tipo)),celulas,auditoria};
-}
-function mostrarGradeConvertida(aulas){
-  previsualizacaoLeitura.innerHTML="";
-  const sec=document.createElement("section");
-  const h=document.createElement("h3");h.textContent="Prévia da grade extraída";sec.appendChild(h);
-  const resumo=document.createElement("p");resumo.textContent=aulas.length+" atribuições reconhecidas. O componente curricular precisa ser confirmado.";sec.appendChild(resumo);
-  const filtro=document.createElement("input");filtro.type="search";filtro.placeholder="Filtrar por professor, turma ou tipo";filtro.setAttribute("aria-label","Filtrar prévia");
-  const details=document.createElement("details");details.open=true;const sum=document.createElement("summary");sum.textContent="Conferir registros reconhecidos";details.appendChild(sum);
-  const table=document.createElement("table");const thead=document.createElement("thead");thead.innerHTML="<tr><th>Professor</th><th>Dia</th><th>Turno</th><th>Período</th><th>Horário</th><th>Valor/turma</th><th>Tipo</th></tr>";table.appendChild(thead);
-  const tbody=document.createElement("tbody");
-  const desenhar=()=>{
-    tbody.innerHTML="";
-    const termo=normalizarFiltro(filtro.value);
-    const itens=aulas.filter(a=>normalizarFiltro([a.professor,a.turma,a.tipo,a.valorOriginal].join(" ")).includes(termo));
-    itens.slice(0,1000).forEach(a=>{
-      const tr=document.createElement("tr");
-      [a.professor,a.dia,a.turno,String(a.periodo).padStart(2,"0"),a.inicio+"–"+a.fim,a.turma||a.valorOriginal,a.tipo].forEach(v=>{const td=document.createElement("td");td.textContent=v;tr.appendChild(td);});
-      tbody.appendChild(tr);
-    });
-    if(itens.length>1000){const tr=document.createElement("tr"),td=document.createElement("td");td.colSpan=7;td.textContent="Exibindo 1.000 de "+itens.length+" registros; use o filtro para restringir.";tr.appendChild(td);tbody.appendChild(tr);}
-  };
-  filtro.addEventListener("input",desenhar);desenhar();
-  table.appendChild(tbody);details.appendChild(table);sec.append(filtro,details);previsualizacaoLeitura.appendChild(sec);
-}
-pdfForm.addEventListener("submit",async e=>{
-  e.preventDefault();
-  const arquivo=pdfIndividual.files[0];
-  if(!arquivo){statusPdf.textContent="Selecione o PDF individual dos professores.";return;}
-  const botao=document.getElementById("enviarPdfs");
-  botao.disabled=true;previsualizacaoLeitura.innerHTML="";
-  statusPdf.textContent="Lendo o relatório individual...";
-  if(estadoConversao)estadoConversao.textContent="Verificando professores e células do PDF.";
+form.addEventListener("submit",async e=>{
+  e.preventDefault();const file=arquivoInput.files[0];if(!file){statusImportacao.textContent="Selecione o relatório geral.";return;}
+  const btn=document.getElementById("importarRelatorio");btn.disabled=true;previa.innerHTML="";statusImportacao.textContent="Lendo relatório...";
   try{
-    const passagens=[];
-    let encontrouMeta=false;
-    for(let tentativa=1;tentativa<=3;tentativa++){
-      statusPdf.textContent="Leitura "+tentativa+"/3 do relatório individual...";
-      const leitura=await extrairTextoPdf(arquivo);
-      if(leitura.total<1||leitura.paginas.join("").trim().length<100)throw new Error("O PDF individual não contém texto selecionável suficiente.");
-      const conversao=converterRelatorioIndividual(leitura,tentativa);
-      passagens.push({tentativa,leitura,conversao});
-      if(conversao.auditoria.professoresDetectados>=27){encontrouMeta=true;break;}
-      if(tentativa<3){
-        const contagem=leitura.paginasItens.reduce((n,p)=>n+p.reduce((m,g)=>m+g.itens.length,0),0);
-        statusPdf.textContent="Encontrados "+conversao.auditoria.professoresDetectados+" professores. Preparando releitura "+(tentativa+1)+"/3; itens de texto examinados: "+contagem+".";
-      }
-      await new Promise(resolve=>setTimeout(resolve,0));
-    }
-    const melhor=passagens.reduce((best,item)=>item.conversao.auditoria.professoresDetectados>best.conversao.auditoria.professoresDetectados?item:best,passagens[0]);
-    const auditoria=melhor.conversao.auditoria;
-    auditoria.tentativas=passagens.map(t=>({tentativa:t.tentativa,professores:t.conversao.auditoria.professoresDetectados,celulas:t.conversao.auditoria.celulasClassificadas}));
-    mostrarAuditoria(auditoria);
-    if(!encontrouMeta||auditoria.professoresDetectados<27)throw new Error("Não foi possível identificar os 27 professores após "+passagens.length+" leitura(s). Foram encontrados "+auditoria.professoresDetectados+". Confira o relatório de auditoria. Nenhum horário foi publicado.");
-    const formData=new FormData();formData.append("pdf",arquivo);
-    const resposta=await fetch("/api/horarios/pdf/individual",{method:"POST",body:formData});
-    const dados=await resposta.json();if(!resposta.ok)throw new Error(dados.erro||"Falha ao enviar o relatório individual.");
-    documentosEnviados.individual=dados.arquivo;atualizarEstadoDocumentos();
-    const aulas=melhor.conversao.aulas;
-    registros=aulas.map(c=>({
-      professor:c.professor,turma:c.turma||c.valorOriginal,
-      componente:c.tipo==="HORA_ATIVIDADE"?"H/A":c.tipo==="TREINO"?"AETE":c.tipo==="ROBOTICA"?"ROBO":"A confirmar",
-      horario:c.dia+" "+c.inicio+"–"+c.fim,dia:c.dia,inicio:c.inicio,fim:c.fim,turno:c.turno,origem:c.origem,
-      tipo:c.tipo,pagina:c.pagina,bloco:c.bloco,periodo:c.periodo
-    }));
-    renderizar();mostrarGradeConvertida(aulas);
-    if(estadoConversao)estadoConversao.textContent="Leitura aprovada: "+auditoria.professoresDetectados+" professores distintos; "+auditoria.celulasClassificadas+" células classificadas. Revise os dados antes de publicar.";
-    statusPdf.textContent="Prévia pronta após "+passagens.length+" leitura(s): "+auditoria.professoresDetectados+" professores e "+aulas.length+" atribuições.";
-  }catch(err){
-    statusPdf.textContent="Falha na conversão: "+err.message;
-    if(estadoConversao)estadoConversao.textContent="A leitura não foi aprovada. A grade publicada anterior foi preservada.";
-  }finally{botao.disabled=false;}
+    const r=await converter(file);registros=r.aulas.map(a=>({...a}));renderizar();mostrarPrevia(r);
+    estadoConversao.textContent="Leitura concluída. Revise os registros; nada foi publicado automaticamente.";
+    statusImportacao.textContent="Pronto: "+r.aulas.length+" aulas em "+r.turmas.length+" turmas."+(r.excecoes.length?" Células para conferir: "+r.excecoes.length+".":"");
+  }catch(err){statusImportacao.textContent="Falha na leitura: "+err.message;estadoConversao.textContent="A grade publicada anteriormente foi preservada.";}
+  finally{btn.disabled=false;}
 });
-function mostrarAuditoria(auditoria){
-  const box=document.createElement("section");
-  const h=document.createElement("h3");h.textContent="Verificação automática do PDF";box.appendChild(h);
-  const p=document.createElement("p");p.textContent="Professores detectados: "+auditoria.professoresDetectados+" / "+auditoria.metaProfessores+". Blocos: "+auditoria.blocos+". Células examinadas: "+auditoria.celulasClassificadas+" / "+auditoria.celulasEsperadas+".";box.appendChild(p);
-  const tipos=document.createElement("p");tipos.textContent="Tipos: "+Object.entries(auditoria.contagemPorTipo).map(([k,v])=>k+": "+v).join(" · ");box.appendChild(tipos);
-  if(auditoria.tentativas?.length){const tent=document.createElement("p");tent.textContent="Leituras: "+auditoria.tentativas.map(t=>"#"+t.tentativa+" = "+t.professores+" professores, "+t.celulas+" células").join(" | ");box.appendChild(tent);}
-  const lista=document.createElement("details"),resumo=document.createElement("summary");resumo.textContent="Nomes encontrados e exceções";lista.appendChild(resumo);
-  const ul=document.createElement("ul");
-  auditoria.professores.forEach(p=>{const li=document.createElement("li");li.textContent=p.nome+" — página "+p.pagina+", bloco "+(p.bloco||"?");ul.appendChild(li);});
-  auditoria.blocosDetalhados?.filter(x=>!x.professor||x.professor==="PROFESSOR_NÃO_RECONHECIDO").forEach(x=>{const li=document.createElement("li");li.textContent="Bloco sem professor reconhecido: página "+x.pagina+", bloco "+x.bloco;ul.appendChild(li);});
-  auditoria.periodosFaltantes.forEach(x=>{const li=document.createElement("li");li.textContent="Bloco "+x.bloco+" da página "+x.pagina+": "+x.periodosDetectados+" períodos reconhecidos.";ul.appendChild(li);});
-  auditoria.desconhecidas.slice(0,100).forEach(c=>{const li=document.createElement("li");li.textContent="Desconhecido: "+c.professor+" — "+c.dia+", "+c.turno+", período "+c.periodo+": "+c.valorOriginal+" (pág. "+c.pagina+", X="+Math.round(c.x)+", Y="+Math.round(c.y)+")";ul.appendChild(li);});
-  lista.appendChild(ul);box.appendChild(lista);previsualizacaoLeitura.appendChild(box);
-}
-function atualizarEstadoDocumentos(){
-  const nomes={individual:"Relatório individual"};
-  estadoDocumentos.innerHTML="";
-  Object.entries(nomes).forEach(([tipo,nome])=>{const li=document.createElement("li");li.textContent=nome+": "+(documentosEnviados[tipo]?"enviado ("+documentosEnviados[tipo]+")":"ainda não enviado");estadoDocumentos.appendChild(li);});
-}
-async function carregarDocumentos(){
-  try{const r=await fetch("/api/horarios/documentos");if(!r.ok)return;const d=await r.json();documentosEnviados={individual:d.individual};atualizarEstadoDocumentos();}
-  catch{}
-}
-document.getElementById("adicionarLinha").addEventListener("click",()=>{registros.push({professor:"",turma:"",componente:"",horario:""});renderizar();});
+document.getElementById("adicionarLinha").addEventListener("click",()=>{registros.push({professor:"",turma:"",componente:"",horario:"",dia:"",inicio:"",fim:"",turno:"A confirmar",periodo:""});renderizar();});
 document.getElementById("salvarHorarios").addEventListener("click",async()=>{
   statusSalvar.textContent="Salvando...";
   try{
-    const prepararRegistro=r=>{const m=String(r.horario||"").match(/^(segunda-feira|terça-feira|quarta-feira|quinta-feira|sexta-feira|sábado|domingo)\s+(\d{2}:\d{2})\s*[–-]\s*(\d{2}:\d{2})$/i);return {professor:r.professor,turma:r.turma,componente:r.componente,horario:r.horario,dia:m?m[1]:(r.dia||""),inicio:m?m[2]:(r.inicio||""),fim:m?m[3]:(r.fim||""),turno:(m?Number(m[2].slice(0,2)):Number(String(r.inicio||"00").slice(0,2)))<12?"manhã":"tarde",origem:r.origem||""};};
-    const registrosProntos=registros.map(prepararRegistro);
-    const incompletos=registrosProntos.filter(r=>!r.professor||!r.turma);
-    if(incompletos.length){throw new Error("Há "+incompletos.length+" registro(s) sem professor ou turma/tipo. Corrija-os antes de publicar.");}
-    const nomesLidos=[...new Set(registrosProntos.map(r=>normalizarNomeProfessor(r.professor)).filter(Boolean))];
-    if(documentosEnviados.individual&&nomesLidos.length<27){throw new Error("A publicação foi bloqueada: a prévia contém somente "+nomesLidos.length+" professores distintos; são necessários pelo menos 27.");}
-    const aulasParaPublicar=registrosProntos.map(r=>({...r,componente:r.componente||"A confirmar"}));
-    const resposta=await fetch("/api/horarios",{method:"PUT",headers:{"Content-Type":"application/json"},body:JSON.stringify({professores:aulasParaPublicar,aulas:aulasParaPublicar,pdf:documentosEnviados.individual||pdfSelecionado})});
-    const dados=await resposta.json();if(!resposta.ok)throw new Error(dados.erro||"Falha ao salvar.");
-    statusSalvar.textContent="Horários publicados. Registros: "+dados.total+".";
-    carregarAtual();
-carregarDocumentos();
+    const ready=registros.map(r=>({...r,professor:String(r.professor||"").trim(),turma:String(r.turma||"").trim(),componente:String(r.componente||"").trim(),horario:String(r.horario||"").trim(),periodo:String(r.periodo||"").trim()}));
+    if(!ready.length) throw new Error("Não há registros para publicar.");
+    const missing=ready.filter(r=>!r.professor||!r.turma||!r.componente||!r.dia);
+    if(missing.length) throw new Error(missing.length+" registro(s) sem professor, turma, componente ou dia. Corrija antes de publicar.");
+    const response=await fetch("/api/horarios",{method:"PUT",headers:{"Content-Type":"application/json"},body:JSON.stringify({professores:ready,aulas:ready,pdf:null})});
+    const data=await response.json();if(!response.ok)throw new Error(data.erro||"Falha ao salvar.");
+    statusSalvar.textContent="Horários publicados. Aulas: "+(data.totalAulas??data.total)+".";
+    await carregarAtual();
   }catch(err){statusSalvar.textContent="Erro: "+err.message;}
 });
 async function carregarAtual(){
-  try{const r=await fetch("/api/horarios");if(!r.ok)throw new Error();const d=await r.json();registros=d.professores||[];aulasPublicadas=Array.isArray(d.aulas)?d.aulas:[];renderizar();prepararFiltroDias();estadoAtual.textContent=d.atualizadoEm?"Última publicação: "+new Date(d.atualizadoEm).toLocaleString("pt-BR")+" · "+registros.length+" registros.":"Ainda não há horários publicados.";}
-  catch{estadoAtual.textContent="Não foi possível consultar a versão publicada.";}
+  try{
+    const response=await fetch("/api/horarios");if(!response.ok)throw new Error();
+    const data=await response.json();registros=data.professores||[];aulasPublicadas=Array.isArray(data.aulas)?data.aulas:[];
+    renderizar();prepararDias();
+    estadoAtual.textContent=data.atualizadoEm?"Última publicação: "+new Date(data.atualizadoEm).toLocaleString("pt-BR")+" · "+aulasPublicadas.length+" aulas.":"Ainda não há horários publicados.";
+  }catch{estadoAtual.textContent="Não foi possível consultar a versão publicada.";}
 }
 carregarAtual();
-const botaoVoltarTopo=document.getElementById("voltarTopo");
-if(botaoVoltarTopo)botaoVoltarTopo.addEventListener("click",()=>window.scrollTo({top:0,behavior:"smooth"}));
+const topo=document.getElementById("voltarTopo");if(topo)topo.addEventListener("click",()=>window.scrollTo({top:0,behavior:"smooth"}));
