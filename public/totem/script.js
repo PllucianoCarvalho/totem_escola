@@ -1,6 +1,12 @@
 const video = document.getElementById("video");
 const imagem = document.getElementById("imagem");
 const aviso = document.getElementById("aviso");
+const paginaHorarios = document.getElementById("paginaHorarios");
+
+// Alternância automática: 90 s de vídeos/fotos e 30 s de horários.
+const TEMPO_MIDIA_MS = 90 * 1000;
+const TEMPO_HORARIOS_MS = 30 * 1000;
+let exibindoHorarios = false;
 
 let videoAtual = null;
 let avisosAtuais = [];
@@ -137,3 +143,28 @@ verificarAvisos();
 setInterval(verificarVideo, 10 * 1000);
 setInterval(verificarImagem, 10 * 1000);
 setInterval(verificarAvisos, 10 * 1000);
+
+
+function programarAlternancia() {
+    const duracao = exibindoHorarios ? TEMPO_HORARIOS_MS : TEMPO_MIDIA_MS;
+    window.setTimeout(async () => {
+        exibindoHorarios = !exibindoHorarios;
+        paginaHorarios.style.display = exibindoHorarios ? "block" : "none";
+
+        if (exibindoHorarios) {
+            video.pause();
+        } else if (video.style.display !== "none" && video.src) {
+            try {
+                await video.play();
+            } catch (erro) {
+                console.log("Reprodução aguardando autoplay permitido pelo navegador.");
+            }
+        }
+
+        programarAlternancia();
+    }, duracao);
+}
+
+// Começa exibindo vídeos/fotos; depois alterna automaticamente para a grade.
+paginaHorarios.style.display = "none";
+programarAlternancia();
