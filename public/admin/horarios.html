@@ -5,7 +5,6 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Horários dos professores | Totem Escolar</title>
   <link rel="stylesheet" href="/admin/horarios.css">
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
 </head>
 <body>
   <main class="painel">
@@ -16,20 +15,19 @@
     <header>
       <p class="sobretitulo">TOTEM ESCOLAR · ADMINISTRAÇÃO</p>
       <h1>Horários dos professores</h1>
-      <p>Envie o relatório individual dos professores. Ele será a única fonte usada para montar a grade.</p>
+      <p>Importe o relatório geral exportado pelo Urânia+ para montar uma prévia da grade escolar.</p>
     </header>
     <section class="cartao">
-      <h2>1. Importar relatório individual</h2>
-      <p>Envie somente o relatório individual dos professores. A leitura considera todas as páginas e gera uma prévia para revisão antes da publicação.</p>
-      <form id="pdfForm">
-        <label for="pdfIndividual">Relatório individual dos professores (PDF)</label>
-        <input id="pdfIndividual" type="file" accept="application/pdf,.pdf" required>
-        <button id="enviarPdfs" type="submit">Ler relatório individual</button>
+      <h2>1. Importar relatório geral do Urânia+</h2>
+      <p>Selecione o HTML exportado pelo Urânia+. Se o programa salvar uma página HTML com extensão .xls, também tentaremos ler esse arquivo.</p>
+      <form id="relatorioForm">
+        <label for="relatorioGeral">Relatório geral de turmas (HTML ou XLS exportado pelo Urânia+)</label>
+        <input id="relatorioGeral" type="file" accept=".html,.htm,.xls,text/html,application/vnd.ms-excel" required>
+        <button id="importarRelatorio" type="submit">Ler relatório geral</button>
       </form>
-      <p id="statusPdf" role="status"></p>
-      <section id="painelConversao" class="painel-conversao" aria-live="polite"><h3>Prévia da conversão dos horários</h3><p id="estadoConversao">Envie o PDF individual para iniciar a leitura e exibir os dados identificados.</p><div id="previsualizacaoLeitura"></div></section>
-      <ul id="estadoDocumentos" class="ajuda"><li>Relatório individual: ainda não enviado</li></ul>
-      <p class="ajuda">A leitura é experimental e não publica automaticamente. Revise os dados e confirme o componente curricular antes de publicar.</p>
+      <p id="statusImportacao" role="status"></p>
+      <section id="painelConversao" class="painel-conversao" aria-live="polite"><h3>Prévia da conversão dos horários</h3><p id="estadoConversao">Selecione o relatório geral do Urânia+ para visualizar as aulas encontradas.</p><div id="previsualizacaoLeitura"></div></section>
+      <p class="ajuda">A importação não publica automaticamente. Os horários reais e a associação entre períodos e turnos ainda serão organizados depois; por enquanto, os registros preservam o número do período do relatório.</p>
     </section>
     <section class="cartao">
       <div class="titulo-linha">
@@ -39,10 +37,10 @@
       <div class="tabela-wrap">
         <table>
           <thead><tr><th>Professor</th><th>Turma</th><th>Componente</th><th>Horário letivo</th><th></th></tr></thead>
-          <tbody id="linhasHorarios"><tr><td colspan="5" class="vazio">Envie um PDF ou adicione uma linha manualmente.</td></tr></tbody>
+          <tbody id="linhasHorarios"><tr><td colspan="5" class="vazio">Importe o relatório geral ou adicione uma linha manualmente.</td></tr></tbody>
         </table>
       </div>
-      <button id="salvarHorarios" type="button">Publicar horários revisados</button>
+      <button id="salvarHorarios" type="button">Salvar e publicar horários revisados</button>
       <p id="statusSalvar" role="status"></p>
     </section>
     <section class="cartao" id="consultaGrade">
