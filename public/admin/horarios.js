@@ -8,6 +8,63 @@ const statusSalvar = document.getElementById("statusSalvar");
 const estadoAtual = document.getElementById("estadoAtual");
 let registros = [];
 let aulasPublicadas = [];
+let configuracaoHorario = { tipoEscola: "regular", inicioAulas: "07:00", duracaoAula: 50, inicioIntervalo: "09:30", duracaoIntervalo: 20 };
+
+const camposConfiguracao = {
+  tipoEscola: document.getElementById("tipoEscola"),
+  inicioAulas: document.getElementById("inicioAulas"),
+  duracaoAula: document.getElementById("duracaoAula"),
+  inicioIntervalo: document.getElementById("inicioIntervalo"),
+  duracaoIntervalo: document.getElementById("duracaoIntervalo")
+};
+const statusConfiguracao = document.getElementById("statusConfiguracao");
+
+function lerCamposConfiguracao() {
+  return {
+    tipoEscola: camposConfiguracao.tipoEscola.value,
+    inicioAulas: camposConfiguracao.inicioAulas.value,
+    duracaoAula: Number(camposConfiguracao.duracaoAula.value),
+    inicioIntervalo: camposConfiguracao.inicioIntervalo.value,
+    duracaoIntervalo: Number(camposConfiguracao.duracaoIntervalo.value)
+  };
+}
+function minutosHorario(valor) {
+  const [h, m] = String(valor || "00:00").split(":").map(Number);
+  return h * 60 + m;
+}
+function horaTexto(total) {
+  total = ((total % 1440) + 1440) % 1440;
+  return String(Math.floor(total / 60)).padStart(2, "0") + ":" + String(total % 60).padStart(2, "0");
+}
+function horarioDoPeriodo(periodo, config = configuracaoHorario) {
+  const alvo = Number(periodo);
+  if (!Number.isInteger(alvo) || alvo < 1) return null;
+  let atual = minutosHorario(config.inicioAulas), aplicouIntervalo = false;
+  const intervalo = minutosHorario(config.inicioIntervalo), duracao = Number(config.duracaoAula) || 50;
+  const pausa = Number(config.duracaoIntervalo) || 20;
+  let resultado = null;
+  for (let n = 1; n <= alvo; n++) {
+    if (!aplicouIntervalo && (atual >= intervalo || atual + duracao > intervalo)) {
+      atual = intervalo + pausa;
+      aplicouIntervalo = true;
+    }
+    resultado = { inicio: horaTexto(atual), fim: horaTexto(atual + duracao) };
+    atual += duracao;
+  }
+  return resultado;
+}
+function aplicarHorariosCalculados(aulas, config = configuracaoHorario) {
+  return aulas.map(a => {
+    const slot = horarioDoPeriodo(a.periodo, config);
+    return slot ? { ...a, ...slot, horario: slot.inicio + "–" + slot.fim } : { ...a };
+  });
+}
+function preencherCamposConfiguracao(config) {
+  configuracaoHorario = { ...configuracaoHorario, ...(config || {}) };
+  Object.entries(camposConfiguracao).forEach(([chave, campo]) => {
+    if (campo) campo.value = configuracaoHorario[chave];
+  });
+}
 
 function norm(v) { return String(v || "").normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLocaleLowerCase("pt-BR").trim(); }
 function renderizar() {
@@ -140,7 +197,7 @@ document.getElementById("adicionarLinha").addEventListener("click",()=>{registro
 document.getElementById("salvarHorarios").addEventListener("click",async()=>{
   statusSalvar.textContent="Salvando...";
   try{
-    const ready=registros.map(r=>({...r,professor:String(r.professor||"").trim(),turma:String(r.turma||"").trim(),componente:String(r.componente||"").trim(),horario:String(r.horario||"").trim(),periodo:String(r.periodo||"").trim()}));
+    const ready=aplicarHorariosCalculados(registros.map(r=>({...r,professor:String(r.professor||"").trim(),turma:String(r.turma||"").trim(),componente:String(r.componente||"").trim(),horario:String(r.horario||"").trim(),periodo:String(r.periodo||"").trim()})));
     if(!ready.length) throw new Error("Não há registros para publicar.");
     const missing=ready.filter(r=>!r.professor||!r.turma||!r.componente||!r.dia);
     if(missing.length) throw new Error(missing.length+" registro(s) sem professor, turma, componente ou dia. Corrija antes de publicar.");
@@ -150,10 +207,30 @@ document.getElementById("salvarHorarios").addEventListener("click",async()=>{
     await carregarAtual();
   }catch(err){statusSalvar.textContent="Erro: "+err.message;}
 });
+
+document.getElementById("salvarConfiguracao").addEventListener("click", async () => {
+  statusConfiguracao.textContent = "Salvando configuração...";
+  try {
+    const config = lerCamposConfiguracao();
+    const response = await fetch("/api/horarios/configuracao", {
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(config)
+    });
+    const data = await response.json();
+    if (!response.ok) throw new Error(data.erro || "Não foi possível salvar a configuração.");
+    preencherCamposConfiguracao(data.configuracao);
+    statusConfiguracao.textContent = "Configuração salva. Os horários serão recalculados para os períodos publicados.";
+    await carregarAtual();
+  } catch (err) {
+    statusConfiguracao.textContent = "Erro: " + err.message;
+  }
+});
+
 async function carregarAtual(){
   try{
     const response=await fetch("/api/horarios");if(!response.ok)throw new Error();
-    const data=await response.json();registros=data.professores||[];aulasPublicadas=Array.isArray(data.aulas)?data.aulas:[];
+    const data=await response.json();preencherCamposConfiguracao(data.configuracao);registros=data.professores||[];aulasPublicadas=aplicarHorariosCalculados(Array.isArray(data.aulas)?data.aulas:[], configuracaoHorario);
     renderizar();prepararDias();
     estadoAtual.textContent=data.atualizadoEm?"Última publicação: "+new Date(data.atualizadoEm).toLocaleString("pt-BR")+" · "+aulasPublicadas.length+" aulas.":"Ainda não há horários publicados.";
   }catch{estadoAtual.textContent="Não foi possível consultar a versão publicada.";}
