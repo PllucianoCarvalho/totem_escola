@@ -201,7 +201,7 @@ document.getElementById("salvarHorarios").addEventListener("click",async()=>{
     if(!ready.length) throw new Error("Não há registros para publicar.");
     const missing=ready.filter(r=>!r.professor||!r.turma||!r.componente||!r.dia);
     if(missing.length) throw new Error(missing.length+" registro(s) sem professor, turma, componente ou dia. Corrija antes de publicar.");
-    const response=await fetch("/api/horarios",{method:"PUT",headers:{"Content-Type":"application/json"},body:JSON.stringify({professores:ready,aulas:ready,pdf:null})});
+    const response=await fetch("/api/horarios",{method:"PUT",headers:{"Content-Type":"application/json"},body:JSON.stringify({professores:ready,aulas:ready})});
     const data=await response.json();if(!response.ok)throw new Error(data.erro||"Falha ao salvar.");
     statusSalvar.textContent="Horários publicados. Aulas: "+(data.totalAulas??data.total)+".";
     await carregarAtual();

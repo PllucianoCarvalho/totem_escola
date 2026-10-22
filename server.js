@@ -66,8 +66,6 @@ const caminhoConfigImagens = path.join(dadosPath, "imagem.json");
 const horariosPath = path.join(dadosPath, "horarios");
 const caminhoHorarios = path.join(dadosPath, "horarios.json");
 const caminhoConfiguracaoHorarios = path.join(dadosPath, "horarios-config.json");
-const caminhoPdfHorarios = path.join(horariosPath, "horarios-professores.pdf");
-const caminhoDocumentosHorarios = path.join(horariosPath, "documentos.json");
 
 fs.mkdirSync(videosPath, { recursive: true });
 fs.mkdirSync(imagensPath, { recursive: true });
@@ -94,26 +92,6 @@ const storageImagem = multer.diskStorage({
     }
 });
 
-const storagePdfHorarios = multer.diskStorage({
-    destination: (req, file, cb) => cb(null, horariosPath),
-    filename: (req, file, cb) => {
-        const nome = path.parse(file.originalname).name.replace(/[^a-zA-Z0-9_-]/g, "_");
-        cb(null, `${Date.now()}-${nome}.pdf`);
-    }
-});
-
-const uploadPdfHorarios = multer({
-    storage: storagePdfHorarios,
-    limits: { fileSize: 25 * 1024 * 1024 },
-    fileFilter: (req, file, cb) => {
-        const extensao = path.extname(file.originalname).toLowerCase();
-        if (extensao !== ".pdf" || (file.mimetype !== "application/pdf" && file.mimetype !== "application/octet-stream")) {
-            return cb(new Error("Envie um arquivo PDF válido."));
-        }
-        cb(null, true);
-    }
-});
-
 const CONFIG_HORARIOS_PADRAO = {
     tipoEscola: "regular",
     inicioAulas: "07:00",
@@ -134,11 +112,10 @@ function lerConfiguracaoHorarios() {
 
 function lerHorarios() {
     if (!fs.existsSync(caminhoHorarios)) {
-        return { pdf: null, atualizadoEm: null, professores: [], aulas: [], configuracao: lerConfiguracaoHorarios() };
+        return { atualizadoEm: null, professores: [], aulas: [], configuracao: lerConfiguracaoHorarios() };
     }
     const dados = JSON.parse(fs.readFileSync(caminhoHorarios, "utf8"));
     return {
-        pdf: dados.pdf || null,
         atualizadoEm: dados.atualizadoEm || null,
         professores: Array.isArray(dados.professores) ? dados.professores : [],
         aulas: Array.isArray(dados.aulas) ? dados.aulas : [],
@@ -278,6 +255,8 @@ app.delete("/api/avisos/:id", protegerApi, (req, res) => {
     res.json({ sucesso: true });
 });
 
+app.get("/", (req, res) => res.redirect("/login"));
+
 app.get("/horarios", (req, res) => {
     res.sendFile(path.join(__dirname, "public", "horarios", "index.html"));
 });
@@ -317,34 +296,6 @@ app.put("/api/horarios/configuracao", protegerApi, (req, res) => {
     res.json({ sucesso: true, configuracao });
 });
 
-function lerDocumentosHorarios() {
-    if (!fs.existsSync(caminhoDocumentosHorarios)) return { matutino: null, vespertino: null, individual: null, atualizadoEm: null };
-    try {
-        const dados = JSON.parse(fs.readFileSync(caminhoDocumentosHorarios, "utf8"));
-        return { matutino: dados.matutino || null, vespertino: dados.vespertino || null, individual: dados.individual || null, atualizadoEm: dados.atualizadoEm || null };
-    } catch { return { matutino: null, vespertino: null, individual: null, atualizadoEm: null }; }
-}
-
-app.get("/api/horarios/documentos", protegerApi, (req, res) => res.json(lerDocumentosHorarios()));
-
-app.post("/api/horarios/pdf/:tipo", protegerApi, (req, res, next) => {
-    if (!["matutino", "vespertino", "individual"].includes(req.params.tipo)) return res.status(400).json({ erro: "Tipo de relatório inválido." });
-    next();
-}, uploadPdfHorarios.single("pdf"), (req, res) => {
-    if (!req.file) return res.status(400).json({ erro: "Selecione um arquivo PDF." });
-    const documentos = lerDocumentosHorarios();
-    documentos[req.params.tipo] = req.file.filename;
-    documentos.atualizadoEm = new Date().toISOString();
-    fs.writeFileSync(caminhoDocumentosHorarios, JSON.stringify(documentos, null, 2), "utf8");
-    res.json({ sucesso: true, tipo: req.params.tipo, arquivo: req.file.filename, documentos });
-});
-
-// Compatibilidade com a rota antiga.
- app.post("/api/horarios/pdf", protegerApi, uploadPdfHorarios.single("pdf"), (req, res) => {
-    if (!req.file) return res.status(400).json({ erro: "Selecione um arquivo PDF." });
-    res.json({ sucesso: true, arquivo: req.file.filename });
-});
-
 app.post("/api/horarios/importar", protegerApi, (req, res) => {
     const { aulas } = req.body;
     if (!Array.isArray(aulas) || aulas.length === 0) return res.status(400).json({ erro: "Nenhuma aula válida foi identificada nos relatórios." });
@@ -355,12 +306,12 @@ app.post("/api/horarios/importar", protegerApi, (req, res) => {
     })).filter(a => a.dia && a.inicio && a.fim && a.turma && a.professor && a.componente);
     if (!normalizadas.length) return res.status(400).json({ erro: "Os dados extraídos não contêm aulas completas com professor, turma e componente." });
     const anterior = lerHorarios();
-    const dados = { pdf: anterior.pdf, atualizadoEm: new Date().toISOString(), aulas: normalizadas, professores: normalizadas.map(a => ({ professor: a.professor, sala: "", turma: a.turma, componente: a.componente, horario: a.dia + " " + a.inicio, dia: a.dia, inicio: a.inicio, fim: a.fim, turno: a.turno })) };
+    const dados = { atualizadoEm: new Date().toISOString(), aulas: normalizadas, professores: normalizadas.map(a => ({ professor: a.professor, sala: "", turma: a.turma, componente: a.componente, horario: a.dia + " " + a.inicio, dia: a.dia, inicio: a.inicio, fim: a.fim, turno: a.turno })) };
     fs.writeFileSync(caminhoHorarios, JSON.stringify(dados, null, 2), "utf8");
     res.json({ sucesso: true, total: normalizadas.length, atualizadoEm: dados.atualizadoEm });
 });
 app.put("/api/horarios", protegerApi, (req, res) => {
-    const { professores, pdf, aulas } = req.body;
+    const { professores, aulas } = req.body;
     if (!Array.isArray(professores)) {
         return res.status(400).json({ erro: "A lista de horários é inválida." });
     }
@@ -381,11 +332,6 @@ app.put("/api/horarios", protegerApi, (req, res) => {
 
     if (normalizados.some(item => !item.professor || !item.turma || !item.componente)) {
         return res.status(400).json({ erro: "Preencha professor, turma e componente em todas as linhas." });
-    }
-
-    const pdfSeguro = pdf ? path.basename(String(pdf)) : null;
-    if (pdfSeguro && !fs.existsSync(path.join(horariosPath, pdfSeguro))) {
-        return res.status(400).json({ erro: "O PDF selecionado não foi encontrado no servidor." });
     }
 
     const anterior = lerHorarios();
@@ -412,7 +358,6 @@ app.put("/api/horarios", protegerApi, (req, res) => {
     }).filter(item => item.professor && item.turma && item.componente);
 
     const dados = {
-        pdf: pdfSeguro || anterior.pdf,
         atualizadoEm: new Date().toISOString(),
         professores: normalizados,
         aulas: aulasNormalizadas.length ? aulasNormalizadas : anterior.aulas
