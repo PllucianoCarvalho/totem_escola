@@ -23,7 +23,6 @@ function montarHorariosAula(quantidadePeriodos=12){
 function horarioPorPeriodo(periodo){return horariosAula.find(h=>h.numero===Number(periodo))||null;}
 function normalizarAulasComHorario(aulas){return aulas.map(a=>{const slot=horarioPorPeriodo(a.periodo);return slot?{...a,inicio:slot.inicio,fim:slot.fim,horario:slot.inicio+"–"+slot.fim}:a;});}
 const diasNomes=["domingo","segunda-feira","terça-feira","quarta-feira","quinta-feira","sexta-feira","sábado"];
-function minutos(h){const [a,b]=h.split(":").map(Number);return a*60+b;}
 function aulaAtualAgora(){const d=new Date(),m=d.getHours()*60+d.getMinutes();return horariosAula.find(a=>m>=minutos(a.inicio)&&m<minutos(a.fim))||null;}
 function atualizarCabecalho(){
  const agora=new Date(),hora=String(agora.getHours()).padStart(2,"0")+":"+String(agora.getMinutes()).padStart(2,"0");
@@ -53,7 +52,7 @@ function renderizar(){
  atuais.forEach(a=>lista.appendChild(montarCartao(a.professor,[a.turma,a.componente].filter(Boolean).join(" · "))));
 }
 async function carregar(){
- try{const r=await fetch("/api/horarios",{cache:"no-store"});if(!r.ok)throw new Error();const d=await r.json();configuracaoHorario={...configuracaoHorario,...(d.configuracao||{})};professores=Array.isArray(d.professores)?d.professores:[];aulasGrade=normalizarAulasComHorario(Array.isArray(d.aulas)?d.aulas:[]);horariosAula=montarHorariosAula(Math.max(12,...aulasGrade.map(a=>Number(a.periodo)||0)));renderizar();atualizacao.textContent="Grade atualizada às "+new Date().toLocaleTimeString("pt-BR",{hour:"2-digit",minute:"2-digit"});}
+ try{const r=await fetch("/api/horarios",{cache:"no-store"});if(!r.ok)throw new Error();const d=await r.json();configuracaoHorario={...configuracaoHorario,...(d.configuracao||{})};professores=Array.isArray(d.professores)?d.professores:[];const aulasRecebidas=Array.isArray(d.aulas)?d.aulas:[];horariosAula=montarHorariosAula(Math.max(12,...aulasRecebidas.map(a=>Number(a.periodo)||0)));aulasGrade=normalizarAulasComHorario(aulasRecebidas);renderizar();atualizacao.textContent="Grade atualizada às "+new Date().toLocaleTimeString("pt-BR",{hour:"2-digit",minute:"2-digit"});}
  catch{lista.innerHTML='<p class="vazio">Não foi possível carregar os horários.</p>';atualizacao.textContent="Falha ao atualizar os dados.";}
 }
 atualizarCabecalho();carregar();
