@@ -306,7 +306,7 @@ app.post("/api/horarios/importar", protegerApi, (req, res) => {
     })).filter(a => a.dia && a.inicio && a.fim && a.turma && a.professor && a.componente);
     if (!normalizadas.length) return res.status(400).json({ erro: "Os dados extraídos não contêm aulas completas com professor, turma e componente." });
     const anterior = lerHorarios();
-    const dados = { pdf: anterior.pdf, atualizadoEm: new Date().toISOString(), aulas: normalizadas, professores: normalizadas.map(a => ({ professor: a.professor, sala: "", turma: a.turma, componente: a.componente, horario: a.dia + " " + a.inicio, dia: a.dia, inicio: a.inicio, fim: a.fim, turno: a.turno })) };
+    const dados = { atualizadoEm: new Date().toISOString(), aulas: normalizadas, professores: normalizadas.map(a => ({ professor: a.professor, sala: "", turma: a.turma, componente: a.componente, horario: a.dia + " " + a.inicio, dia: a.dia, inicio: a.inicio, fim: a.fim, turno: a.turno })) };
     fs.writeFileSync(caminhoHorarios, JSON.stringify(dados, null, 2), "utf8");
     res.json({ sucesso: true, total: normalizadas.length, atualizadoEm: dados.atualizadoEm });
 });
