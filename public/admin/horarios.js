@@ -16,7 +16,7 @@ async function carregarGradeOficial() {
       if (!Array.isArray(linha) || linha.length < 6) { excecoes.push("Registro oficial incompleto"); continue; }
       const [siglaTurno, diaCurto, inicio, turma, componente, professor] = linha.map(v => String(v ?? "").trim());
       const dia = dias[diaCurto] || "";
-      if (!dia || !/^([01]\\d|2[0-3]):[0-5]\\d$/.test(inicio) || !turma || !componente || !professor) {
+      if (!dia || !/^([01]\d|2[0-3]):[0-5]\d$/.test(inicio) || !turma || !componente || !professor) {
         excecoes.push([siglaTurno,diaCurto,inicio,turma,componente,professor].join(" | "));
         continue;
       }
