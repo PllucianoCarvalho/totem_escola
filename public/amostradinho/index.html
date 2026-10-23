@@ -3,41 +3,67 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Administração do Totem</title>
+    <meta name="theme-color" content="#12355A">
+    <title>AMOSTRADINHO · Totem Escolar</title>
     <link rel="stylesheet" href="style.css">
 </head>
 <body>
     <main class="painel">
-        <h1>Totem Escolar</h1>
+        <header class="cabecalho">
+            <h1>Totem Escolar</h1>
+            <p>AMOSTRADINHO · Painel de administração</p>
+        </header>
 
-        <section>
+        <nav class="menu-admin" aria-label="Gerenciar totem">
+            <button type="button" class="menu-opcao ativa" data-secao="videos" aria-pressed="true">
+                <span class="icone" aria-hidden="true">▶</span><span>Vídeo</span>
+            </button>
+            <button type="button" class="menu-opcao" data-secao="imagens" aria-pressed="false">
+                <span class="icone" aria-hidden="true">▧</span><span>Imagem</span>
+            </button>
+            <button type="button" class="menu-opcao" data-secao="horarios" aria-pressed="false">
+                <span class="icone" aria-hidden="true">◷</span><span>Horários</span>
+            </button>
+            <button type="button" class="menu-opcao" data-secao="avisos" aria-pressed="false">
+                <span class="icone" aria-hidden="true">▤</span><span>Avisos</span>
+            </button>
+        </nav>
+
+        <section class="secao-admin selecionada" id="secao-videos" data-painel="videos">
             <h2>Vídeos disponíveis</h2>
             <div id="listaVideos">Carregando vídeos...</div>
+            <div class="bloco-form">
+                <h3>Adicionar vídeo</h3>
+                <form id="videoForm">
+                    <label for="videoInput">Arquivo de vídeo</label>
+                    <input type="file" id="videoInput" name="video" accept="video/*" required>
+                    <button type="submit">Enviar vídeo</button>
+                </form>
+                <p id="statusVideo" role="status" aria-live="polite"></p>
+            </div>
         </section>
 
-        <section>
-            <h2>Adicionar vídeo</h2>
-            <form id="videoForm">
-                <input type="file" id="videoInput" name="video" accept="video/*" required>
-                <button type="submit">Enviar vídeo</button>
-            </form>
-            <p id="statusVideo"></p>
-        </section>
-
-        <section>
+        <section class="secao-admin" id="secao-imagens" data-painel="imagens" hidden>
             <h2>Imagens após o vídeo</h2>
             <form id="imagemForm">
+                <label for="imagemInput">Arquivo de imagem</label>
                 <input type="file" id="imagemInput" name="imagem" accept="image/*" required>
-                <label for="duracaoImagem">Tempo desta imagem (segundos)</label>
+                <label for="duracaoImagem">Tempo de exibição (segundos)</label>
                 <input type="number" id="duracaoImagem" min="1" value="10" required>
                 <button type="submit">Adicionar imagem</button>
             </form>
-            <p id="statusImagem"></p>
+            <p id="statusImagem" role="status" aria-live="polite"></p>
             <h3>Imagens publicadas</h3>
             <div id="listaImagem">Carregando imagens...</div>
         </section>
 
-        <section>
+        <section class="secao-admin" id="secao-horarios" data-painel="horarios" hidden>
+            <h2>Horários</h2>
+            <p class="descricao-secao">Acesse a administração da grade de horários para consultar e atualizar os dados exibidos no totem.</p>
+            <a class="botao-link" href="/admin/horarios.html">Abrir administração de horários</a>
+        </section>
+
+        <section class="secao-admin" id="secao-avisos" data-painel="avisos" hidden>
             <h2>Avisos</h2>
             <form id="avisoForm">
                 <label for="mensagem">Mensagem</label>
@@ -48,7 +74,8 @@
                 <input type="datetime-local" id="fim" required>
                 <button type="submit">Publicar aviso</button>
             </form>
-            <p id="statusAviso"></p>
+            <p id="statusAviso" role="status" aria-live="polite"></p>
+            <h3>Avisos cadastrados</h3>
             <div id="listaAvisos">Carregando avisos...</div>
         </section>
     </main>
