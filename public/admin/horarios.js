@@ -1,4 +1,49 @@
 const form = document.getElementById("relatorioForm");
+
+async function carregarGradeOficial() {
+  const botao = document.getElementById("carregarGradeOficial");
+  botao.disabled = true;
+  statusImportacao.textContent = "Carregando grade oficial...";
+  previa.innerHTML = "";
+  try {
+    const resposta = await fetch("/admin/horarios-oficiais.js", { cache: "no-store" });
+    if (!resposta.ok || !window.TOTEM_HORARIOS_OFICIAIS) throw new Error("Fonte oficial indisponível. Atualize a página e tente novamente.");
+    const fonte = window.TOTEM_HORARIOS_OFICIAIS;
+    if (!Array.isArray(fonte.e) || !fonte.e.length) throw new Error("A fonte oficial não contém aulas.");
+    const dias = { Seg:"segunda-feira", Ter:"terça-feira", Qua:"quarta-feira", Qui:"quinta-feira", Sex:"sexta-feira", Sáb:"sábado", Sab:"sábado" };
+    const aulas = [], excecoes = [], vistos = new Set();
+    for (const linha of fonte.e) {
+      if (!Array.isArray(linha) || linha.length < 6) { excecoes.push("Registro malformado"); continue; }
+      const [siglaTurno, diaCurto, inicio, turma, componente, professor] = linha.map(v => String(v ?? "").trim());
+      const dia = dias[diaCurto] || "";
+      if (!dia || !/^([01]\d|2[0-3]):[0-5]\d$/.test(inicio) || !turma || !componente || !professor) {
+        excecoes.push([siglaTurno,diaCurto,inicio,turma,componente,professor].join(" | ")); continue;
+      }
+      const fimMin = Number(inicio.slice(0,2))*60 + Number(inicio.slice(3,5)) + 50;
+      const fim = String(Math.floor((fimMin%1440)/60)).padStart(2,"0")+":"+String(fimMin%60).padStart(2,"0");
+      const turno = siglaTurno === "M" ? "Matutino" : siglaTurno === "V" ? "Vespertino" : siglaTurno === "N" ? "Noturno" : siglaTurno;
+      const chave = [dia,inicio,turma,componente,professor,turno].join("|").toLocaleLowerCase("pt-BR");
+      if (vistos.has(chave)) continue;
+      vistos.add(chave);
+      aulas.push({professor,turma,componente,dia,inicio,fim,turno,horario:inicio+"–"+fim,periodo:"",
+        origem:"grade-oficial-ProfessorMarcio",valorOriginal:componente+" ("+professor+")"});
+    }
+    if (!aulas.length) throw new Error("Nenhuma aula completa reconhecida; os horários publicados foram preservados.");
+    registros = aulas.map(a=>({...a}));
+    renderizar();
+    mostrarPrevia({aulas:aulas.map(a=>({...a,periodo:a.horario})),turmas:[...new Set(aulas.map(a=>a.turma))],
+      dias:[...new Set(aulas.map(a=>a.dia))],periodos:[...new Set(aulas.map(a=>a.horario))],
+      excecoes:excecoes.map(valor=>({dia:"Fonte oficial",periodo:"—",turma:"—",valor}))});
+    estadoConversao.textContent="Prévia da grade oficial carregada. Confira os dados e publique apenas quando estiver correto.";
+    statusImportacao.textContent="Prévia oficial: "+aulas.length+" aulas completas, "+new Set(aulas.map(a=>a.turma)).size+
+      " turmas, "+new Set(aulas.map(a=>a.professor)).size+" professores, "+new Set(aulas.map(a=>a.dia)).size+" dias."+
+      (excecoes.length?" Registros incompletos ignorados: "+excecoes.length+".":"");
+  } catch (erro) {
+    statusImportacao.textContent="Falha ao carregar a grade oficial: "+erro.message;
+  } finally { botao.disabled = false; }
+}
+document.getElementById("carregarGradeOficial").addEventListener("click", carregarGradeOficial);
+
 const arquivoInput = document.getElementById("relatorioGeral");
 const statusImportacao = document.getElementById("statusImportacao");
 const previa = document.getElementById("previsualizacaoLeitura");
