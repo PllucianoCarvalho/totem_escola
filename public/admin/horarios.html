@@ -9,13 +9,13 @@
 <body>
   <main class="painel">
     <nav class="atalhos-horarios" aria-label="Navegação da página">
-      <a class="voltar" href="/admin/">← Voltar ao painel</a>
+      <a class="voltar" href="/amostradinho/">← Voltar ao Amostradinho</a>
       <a class="atalho-consulta" href="#consultaGrade">↓ Ir para consultar grade de aulas</a>
     </nav>
     <header>
       <p class="sobretitulo">TOTEM ESCOLAR · ADMINISTRAÇÃO</p>
       <h1>Horários dos professores</h1>
-      <p>Importe o relatório geral exportado pelo Urânia+ para montar uma prévia da grade escolar.</p>
+      <p>Carregue a grade oficial atualizada ou importe o relatório geral do Urânia+ para conferir a grade antes de publicar.</p>
     </header>
     <section class="cartao" id="configuracaoHorario">
       <h2>1. Configurar o funcionamento da escola</h2>
@@ -47,6 +47,10 @@
     <section class="cartao">
       <h2>2. Importar relatório geral do Urânia+</h2>
       <p>Selecione o HTML exportado pelo Urânia+. Se o programa salvar uma página HTML com extensão .xls, também tentaremos ler esse arquivo.</p>
+      <div class="acoes-fonte-oficial">
+        <button id="carregarGradeOficial" type="button">Carregar grade oficial atualizada</button>
+        <p>Importa a grade validada para uma prévia no formato do Totem. Nada é publicado até clicar em “Publicar horários”.</p>
+      </div>
       <form id="relatorioForm">
         <label for="relatorioGeral">Relatório geral de turmas (HTML ou XLS exportado pelo Urânia+)</label>
         <input id="relatorioGeral" type="file" accept=".html,.htm,.xls,text/html,application/vnd.ms-excel" required>
@@ -94,6 +98,7 @@
     </section>
   </main>
   <button id="voltarTopo" class="botao-voltar-topo" type="button" aria-label="Voltar ao topo" title="Voltar ao topo">↑ <span>Voltar ao topo</span></button>
+  <script src="/admin/horarios-oficiais.js"></script>
   <script src="/admin/horarios.js"></script>
 </body>
 </html>
