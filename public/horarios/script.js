@@ -23,12 +23,12 @@ function montarHorariosAula(quantidadePeriodos=12){
 function horarioPorPeriodo(periodo){return horariosAula.find(h=>h.numero===Number(periodo))||null;}
 function normalizarAulasComHorario(aulas){return aulas.map(a=>{const slot=horarioPorPeriodo(a.periodo);return slot?{...a,inicio:slot.inicio,fim:slot.fim,horario:slot.inicio+"–"+slot.fim}:a;});}
 const diasNomes=["domingo","segunda-feira","terça-feira","quarta-feira","quinta-feira","sexta-feira","sábado"];
-function aulaAtualAgora(){const d=new Date(),m=d.getHours()*60+d.getMinutes();return horariosAula.find(a=>m>=minutos(a.inicio)&&m<minutos(a.fim))||null;}
+function aulaAtualAgora(){const atuais=filtrarAulasAgora();if(!atuais.length)return null;const a=atuais[0];return {inicio:a.inicio,fim:a.fim};}
 function atualizarCabecalho(){
  const agora=new Date(),hora=String(agora.getHours()).padStart(2,"0")+":"+String(agora.getMinutes()).padStart(2,"0");
  relogio.textContent=hora;diaSemana.textContent=diasNomes[agora.getDay()].replace(/^./,c=>c.toUpperCase());
  const aula=aulaAtualAgora();
- if(aula){aulaAtual.textContent=aula.numero+"ª aula · "+aula.inicio+"–"+aula.fim+" ("+(minutos(aula.inicio)<12*60?"manhã":"tarde")+")";}
+ if(aula){aulaAtual.textContent="Aula em andamento · "+aula.inicio+"–"+aula.fim+" ("+(minutos(aula.inicio)<12*60?"manhã":"tarde")+")";}
  else{aulaAtual.textContent="Fora do horário de aula";}
  const emAula=filtrarAulasAgora();quantidade.textContent=emAula.length+" professor(es) em aula";
 }
