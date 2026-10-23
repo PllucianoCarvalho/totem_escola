@@ -1,3 +1,30 @@
+document.querySelectorAll(".menu-opcao").forEach(botao => {
+    botao.addEventListener("click", () => {
+        const jaSelecionado = botao.classList.contains("ativa");
+
+        document.querySelectorAll(".menu-opcao").forEach(opcao => {
+            opcao.classList.remove("ativa");
+            opcao.setAttribute("aria-pressed", "false");
+        });
+
+        document.querySelectorAll("[data-painel]").forEach(painel => {
+            painel.hidden = true;
+            painel.classList.remove("selecionada");
+        });
+
+        if (jaSelecionado) return;
+
+        botao.classList.add("ativa");
+        botao.setAttribute("aria-pressed", "true");
+
+        const painelAtivo = document.querySelector(`[data-painel="${botao.dataset.secao}"]`);
+        if (painelAtivo) {
+            painelAtivo.hidden = false;
+            painelAtivo.classList.add("selecionada");
+        }
+    });
+});
+
 const formVideo = document.getElementById("videoForm");
 const inputVideo = document.getElementById("videoInput");
 const statusVideo = document.getElementById("statusVideo");

@@ -1,7 +1,10 @@
 const video = document.getElementById("video");
 const imagem = document.getElementById("imagem");
 const aviso = document.getElementById("aviso");
+const paginaHorarios = document.getElementById("paginaHorarios");
 
+// Ciclo do Totem: vídeo até o fim -> horários -> imagens -> vídeo.
+const TEMPO_HORARIOS_MS = 30 * 1000;
 let videoAtual = null;
 let avisosAtuais = [];
 let imagensAtuais = [];
@@ -54,32 +57,22 @@ async function verificarImagem() {
 
 video.addEventListener("ended", async () => {
     if (transicaoEmAndamento) return;
-
-    if (imagensAtuais.length === 0) {
-        video.currentTime = 0;
-        try {
-            await video.play();
-        } catch (erro) {
-            console.log("Autoplay aguardando interação.");
-        }
-        return;
-    }
-
     transicaoEmAndamento = true;
 
     try {
+        // Mostrar a grade imediatamente quando o vídeo terminar.
         video.style.display = "none";
-        imagem.style.display = "block";
+        imagem.style.display = "none";
+        paginaHorarios.style.display = "block";
+        await new Promise(resolve => setTimeout(resolve, TEMPO_HORARIOS_MS));
+        paginaHorarios.style.display = "none";
 
+        // Depois da grade, mostrar cada imagem pelo tempo configurado.
         for (let i = 0; i < imagensAtuais.length; i++) {
             const imagemAtual = imagensAtuais[i];
-
-            console.log(
-                `Exibindo imagem ${i + 1}/${imagensAtuais.length}: ${imagemAtual.imagem} por ${imagemAtual.duracao}s`
-            );
-
             imagem.src = `/imagens/${encodeURIComponent(imagemAtual.imagem)}`;
-
+            imagem.style.display = "block";
+            console.log(`Exibindo imagem ${i + 1}/${imagensAtuais.length}: ${imagemAtual.imagem} por ${imagemAtual.duracao}s`);
             await new Promise(resolve => {
                 setTimeout(resolve, (Number(imagemAtual.duracao) || 10) * 1000);
             });
@@ -87,12 +80,18 @@ video.addEventListener("ended", async () => {
 
         imagem.style.display = "none";
         video.style.display = "block";
-        video.currentTime = 0;
-
-        try {
+        if (video.src) {
+            video.currentTime = 0;
             await video.play();
-        } catch (erro) {
-            console.log("Autoplay aguardando interação.");
+        }
+    } catch (erro) {
+        console.error("Erro durante a transição do Totem:", erro);
+        paginaHorarios.style.display = "none";
+        imagem.style.display = "none";
+        video.style.display = "block";
+        if (video.src) {
+            try { video.currentTime = 0; await video.play(); }
+            catch (erroReproducao) { console.error("Não foi possível retomar o vídeo:", erroReproducao); }
         }
     } finally {
         transicaoEmAndamento = false;
@@ -137,3 +136,4 @@ verificarAvisos();
 setInterval(verificarVideo, 10 * 1000);
 setInterval(verificarImagem, 10 * 1000);
 setInterval(verificarAvisos, 10 * 1000);
+

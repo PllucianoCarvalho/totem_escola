@@ -11,6 +11,7 @@ Sistema web para exibição de vídeos, sequência de imagens e avisos escolares
 - Painel administrativo protegido por sessão.
 - Rotas de alteração da API protegidas por autenticação.
 - Armazenamento local de mídias e SQLite.
+- Importação da grade de professores a partir do relatório HTML do Urânia+, com prévia revisável antes da publicação.
 
 ## Requisitos
 
@@ -90,6 +91,10 @@ Após entrar no painel, envie um vídeo em formato MP4 e clique em **Ativar**. A
 - **Acesso a partir de outro computador:** confirme que ambos estão na rede local e que a porta TCP 3000 não está bloqueada pelo firewall.
 
 Se o servidor for configurado futuramente para iniciar pelo systemd executando `server.js` diretamente, a unidade também precisará carregar o arquivo `.env` (por exemplo, com `EnvironmentFile=`) ou usar a opção `--env-file` do Node.js. O comando documentado aqui é `npm start`.
+
+## Importação dos horários escolares
+
+A grade deve ser importada pelo painel administrativo usando o relatório geral exportado pelo Urânia+ em HTML (ou arquivo `.xls` que contenha HTML). A leitura mostra uma prévia e não publica automaticamente; revise os registros e publique somente depois de conferir os dados. A conversão do número de período em horário real usa a configuração da escola. A numeração por turno ainda precisa ser confirmada com o relatório oficial do ensino regular; não se deve presumir que os períodos reiniciam ou continuam entre turnos. O fluxo atual não usa PDFs como fonte de importação.
 
 ## API principal
 

@@ -4,104 +4,56 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-
     <title>Administração do Totem</title>
-
     <link rel="stylesheet" href="style.css">
 </head>
 
 <body>
-
     <main class="painel">
+        <header class="admin-cabecalho">
+            <p class="admin-sobretitulo">PAINEL DE CONTROLE</p>
+            <h1>Totem Escolar</h1>
+            <p class="admin-descricao">Gerencie os conteúdos exibidos no totem da escola.</p>
+        </header>
 
-        <h1>Totem Escolar</h1>
+        <a class="atalho-horarios" href="/admin/horarios.html">
+            <span class="atalho-icone" aria-hidden="true">▦</span>
+            <span class="atalho-texto">
+                <strong>Importar e gerenciar horários</strong>
+                <small>Abrir a página de importação do relatório HTML do Urânia+ e publicar a grade de aulas.</small>
+            </span>
+            <span class="atalho-seta" aria-hidden="true">›</span>
+        </a>
 
         <section>
             <h2>Vídeos disponíveis</h2>
-
-            <div id="listaVideos">
-                Carregando vídeos...
-            </div>
+            <div id="listaVideos">Carregando vídeos...</div>
         </section>
 
         <section>
-
             <h2>Adicionar vídeo</h2>
-
             <form id="videoForm">
-
-                <input
-                    type="file"
-                    id="videoInput"
-                    name="video"
-                    accept="video/*"
-                    required
-                >
-
-                <button type="submit">
-                    Enviar vídeo
-                </button>
-
+                <input type="file" id="videoInput" name="video" accept="video/mp4,.mp4" required>
+                <button type="submit">Enviar vídeo</button>
             </form>
-
-            <p id="statusVideo"></p>
-
+            <p id="statusVideo" role="status"></p>
         </section>
 
         <section>
-
             <h2>Avisos</h2>
-
             <form id="avisoForm">
-
-                <label for="mensagem">
-                    Mensagem
-                </label>
-
-                <textarea
-                    id="mensagem"
-                    required
-                    placeholder="Digite o aviso..."
-                ></textarea>
-
-                <label for="inicio">
-                    Início
-                </label>
-
-                <input
-                    type="datetime-local"
-                    id="inicio"
-                    required
-                >
-
-                <label for="fim">
-                    Fim
-                </label>
-
-                <input
-                    type="datetime-local"
-                    id="fim"
-                    required
-                >
-
-                <button type="submit">
-                    Publicar aviso
-                </button>
-
+                <label for="mensagem">Mensagem</label>
+                <textarea id="mensagem" required placeholder="Digite o aviso..."></textarea>
+                <label for="inicio">Início</label>
+                <input type="datetime-local" id="inicio" required>
+                <label for="fim">Fim</label>
+                <input type="datetime-local" id="fim" required>
+                <button type="submit">Publicar aviso</button>
             </form>
-
-            <p id="statusAviso"></p>
-
-            <div id="listaAvisos">
-                Carregando avisos...
-            </div>
-
+            <p id="statusAviso" role="status"></p>
+            <div id="listaAvisos">Carregando avisos...</div>
         </section>
-
     </main>
-
     <script src="script.js"></script>
-
 </body>
-
 </html>
