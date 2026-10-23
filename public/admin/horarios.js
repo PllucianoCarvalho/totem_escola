@@ -6,8 +6,7 @@ async function carregarGradeOficial() {
   statusImportacao.textContent = "Carregando grade oficial...";
   previa.innerHTML = "";
   try {
-    const resposta = await fetch("/admin/horarios-oficiais.js", { cache: "no-store" });
-    if (!resposta.ok || !window.TOTEM_HORARIOS_OFICIAIS) throw new Error("Fonte oficial indisponível. Atualize a página e tente novamente.");
+    if (!window.TOTEM_HORARIOS_OFICIAIS) throw new Error("Os dados da grade oficial não foram carregados. Atualize a página e tente novamente.");
     const fonte = window.TOTEM_HORARIOS_OFICIAIS;
     if (!Array.isArray(fonte.e) || !fonte.e.length) throw new Error("A fonte oficial não contém aulas.");
     const dias = { Seg:"segunda-feira", Ter:"terça-feira", Qua:"quarta-feira", Qui:"quinta-feira", Sex:"sexta-feira", Sáb:"sábado", Sab:"sábado" };
