@@ -3,43 +3,72 @@ const form = document.getElementById("relatorioForm");
 async function carregarGradeOficial() {
   const botao = document.getElementById("carregarGradeOficial");
   botao.disabled = true;
-  statusImportacao.textContent = "Carregando grade oficial...";
+  statusImportacao.textContent = "Lendo a grade oficial do repositório do professor Márcio...";
   previa.innerHTML = "";
   try {
-    if (!window.TOTEM_HORARIOS_OFICIAIS) throw new Error("Os dados da grade oficial não foram carregados. Atualize a página e tente novamente.");
     const fonte = window.TOTEM_HORARIOS_OFICIAIS;
-    if (!Array.isArray(fonte.e) || !fonte.e.length) throw new Error("A fonte oficial não contém aulas.");
+    if (!fonte || !Array.isArray(fonte.e) || !fonte.e.length) {
+      throw new Error("Os dados oficiais não foram carregados. Atualize a página com Ctrl+F5 e tente novamente.");
+    }
     const dias = { Seg:"segunda-feira", Ter:"terça-feira", Qua:"quarta-feira", Qui:"quinta-feira", Sex:"sexta-feira", Sáb:"sábado", Sab:"sábado" };
     const aulas = [], excecoes = [], vistos = new Set();
     for (const linha of fonte.e) {
-      if (!Array.isArray(linha) || linha.length < 6) { excecoes.push("Registro malformado"); continue; }
+      if (!Array.isArray(linha) || linha.length < 6) { excecoes.push("Registro oficial incompleto"); continue; }
       const [siglaTurno, diaCurto, inicio, turma, componente, professor] = linha.map(v => String(v ?? "").trim());
       const dia = dias[diaCurto] || "";
-      if (!dia || !/^([01]\d|2[0-3]):[0-5]\d$/.test(inicio) || !turma || !componente || !professor) {
-        excecoes.push([siglaTurno,diaCurto,inicio,turma,componente,professor].join(" | ")); continue;
+      if (!dia || !/^([01]\\d|2[0-3]):[0-5]\\d$/.test(inicio) || !turma || !componente || !professor) {
+        excecoes.push([siglaTurno,diaCurto,inicio,turma,componente,professor].join(" | "));
+        continue;
       }
       const fimMin = Number(inicio.slice(0,2))*60 + Number(inicio.slice(3,5)) + 50;
-      const fim = String(Math.floor((fimMin%1440)/60)).padStart(2,"0")+":"+String(fimMin%60).padStart(2,"0");
+      const fim = String(Math.floor((fimMin % 1440) / 60)).padStart(2,"0") + ":" + String(fimMin % 60).padStart(2,"0");
       const turno = siglaTurno === "M" ? "Matutino" : siglaTurno === "V" ? "Vespertino" : siglaTurno === "N" ? "Noturno" : siglaTurno;
       const chave = [dia,inicio,turma,componente,professor,turno].join("|").toLocaleLowerCase("pt-BR");
       if (vistos.has(chave)) continue;
       vistos.add(chave);
-      aulas.push({professor,turma,componente,dia,inicio,fim,turno,horario:inicio+"–"+fim,periodo:"",
-        origem:"grade-oficial-ProfessorMarcio",valorOriginal:componente+" ("+professor+")"});
+      aulas.push({
+        professor, turma, componente, dia, inicio, fim, turno,
+        horario: dia + " " + inicio + "–" + fim,
+        periodo: "",
+        origem: "grade-oficial-ProfessorMarcio",
+        valorOriginal: componente + " (" + professor + ")"
+      });
     }
-    if (!aulas.length) throw new Error("Nenhuma aula completa reconhecida; os horários publicados foram preservados.");
-    registros = aulas.map(a=>({...a}));
+    if (!aulas.length) throw new Error("Nenhuma aula válida foi encontrada; a grade atualmente publicada foi preservada.");
+
+    registros = aulas.map(a => ({...a}));
     renderizar();
-    mostrarPrevia({aulas:aulas.map(a=>({...a,periodo:a.horario})),turmas:[...new Set(aulas.map(a=>a.turma))],
-      dias:[...new Set(aulas.map(a=>a.dia))],periodos:[...new Set(aulas.map(a=>a.horario))],
-      excecoes:excecoes.map(valor=>({dia:"Fonte oficial",periodo:"—",turma:"—",valor}))});
-    estadoConversao.textContent="Prévia da grade oficial carregada. Confira os dados e publique apenas quando estiver correto.";
-    statusImportacao.textContent="Prévia oficial: "+aulas.length+" aulas completas, "+new Set(aulas.map(a=>a.turma)).size+
-      " turmas, "+new Set(aulas.map(a=>a.professor)).size+" professores, "+new Set(aulas.map(a=>a.dia)).size+" dias."+
-      (excecoes.length?" Registros incompletos ignorados: "+excecoes.length+".":"");
+    mostrarPrevia({
+      aulas: aulas.map(a => ({...a, periodo: a.inicio})),
+      turmas: [...new Set(aulas.map(a => a.turma))],
+      dias: [...new Set(aulas.map(a => a.dia))],
+      periodos: [...new Set(aulas.map(a => a.inicio))],
+      excecoes: excecoes.map(valor => ({dia:"Fonte oficial",periodo:"—",turma:"—",valor}))
+    });
+    estadoConversao.textContent = "Prévia da grade oficial carregada. Os horários abaixo são os da fonte do professor Márcio.";
+    statusImportacao.textContent = "Fonte oficial: " + aulas.length + " aulas, " + aulas.filter(a => norm(a.professor).includes("paulo")).length + " aulas atribuídas a PAULO. Preparando publicação...";
+
+    if (!window.confirm("Publicar a grade oficial do professor Márcio no Totem, substituindo a grade antiga? A fonte contém " + aulas.length + " aulas, incluindo " + aulas.filter(a => norm(a.professor).includes("paulo")).length + " atribuídas a PAULO.")) {
+      statusImportacao.textContent = "Prévia carregada, mas a grade antiga foi mantida. Clique novamente para publicar quando quiser.";
+      return;
+    }
+    const resposta = await fetch("/api/horarios", {
+      method: "PUT",
+      headers: {"Content-Type":"application/json"},
+      body: JSON.stringify({professores:aulas, aulas})
+    });
+    const dados = await resposta.json();
+    if (!resposta.ok) throw new Error(dados.erro || "O servidor recusou a publicação.");
+    aulasPublicadas = aulas.map(a => ({...a}));
+    prepararDias();
+    await carregarAtual();
+    statusImportacao.textContent = "Grade oficial publicada com sucesso: " + (dados.totalAulas ?? dados.total) + " aulas. Inclui " + aulas.filter(a => norm(a.professor).includes("paulo")).length + " aulas de PAULO.";
+    estadoConversao.textContent = "Grade oficial publicada. A tela do Totem já pode usar estes dados.";
   } catch (erro) {
-    statusImportacao.textContent="Falha ao carregar a grade oficial: "+erro.message;
-  } finally { botao.disabled = false; }
+    statusImportacao.textContent = "Falha ao importar/publicar a grade oficial: " + erro.message;
+  } finally {
+    botao.disabled = false;
+  }
 }
 document.getElementById("carregarGradeOficial").addEventListener("click", carregarGradeOficial);
 
