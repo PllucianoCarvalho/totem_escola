@@ -1,3 +1,18 @@
+document.querySelectorAll(".menu-opcao").forEach(botao => {
+    botao.addEventListener("click", () => {
+        const destino = botao.dataset.secao;
+        document.querySelectorAll(".menu-opcao").forEach(opcao => {
+            const selecionada = opcao === botao;
+            opcao.classList.toggle("ativa", selecionada);
+            opcao.setAttribute("aria-pressed", String(selecionada));
+        });
+        document.querySelectorAll("[data-painel]").forEach(painel => {
+            painel.hidden = painel.dataset.painel !== destino;
+            painel.classList.toggle("selecionada", !painel.hidden);
+        });
+    });
+});
+
 const formVideo = document.getElementById("videoForm");
 const inputVideo = document.getElementById("videoInput");
 const statusVideo = document.getElementById("statusVideo");
