@@ -1,15 +1,27 @@
 document.querySelectorAll(".menu-opcao").forEach(botao => {
     botao.addEventListener("click", () => {
-        const destino = botao.dataset.secao;
+        const jaSelecionado = botao.classList.contains("ativa");
+
         document.querySelectorAll(".menu-opcao").forEach(opcao => {
-            const selecionada = opcao === botao;
-            opcao.classList.toggle("ativa", selecionada);
-            opcao.setAttribute("aria-pressed", String(selecionada));
+            opcao.classList.remove("ativa");
+            opcao.setAttribute("aria-pressed", "false");
         });
+
         document.querySelectorAll("[data-painel]").forEach(painel => {
-            painel.hidden = painel.dataset.painel !== destino;
-            painel.classList.toggle("selecionada", !painel.hidden);
+            painel.hidden = true;
+            painel.classList.remove("selecionada");
         });
+
+        if (jaSelecionado) return;
+
+        botao.classList.add("ativa");
+        botao.setAttribute("aria-pressed", "true");
+
+        const painelAtivo = document.querySelector(`[data-painel="${botao.dataset.secao}"]`);
+        if (painelAtivo) {
+            painelAtivo.hidden = false;
+            painelAtivo.classList.add("selecionada");
+        }
     });
 });
 
