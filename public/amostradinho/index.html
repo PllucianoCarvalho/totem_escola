@@ -15,7 +15,7 @@
         </header>
 
         <nav class="menu-admin" aria-label="Gerenciar totem">
-            <button type="button" class="menu-opcao ativa" data-secao="videos" aria-pressed="true">
+            <button type="button" class="menu-opcao" data-secao="videos" aria-pressed="false">
                 <span class="icone" aria-hidden="true">▶</span><span>Vídeo</span>
             </button>
             <button type="button" class="menu-opcao" data-secao="imagens" aria-pressed="false">
@@ -29,7 +29,7 @@
             </button>
         </nav>
 
-        <section class="secao-admin selecionada" id="secao-videos" data-painel="videos">
+        <section class="secao-admin" id="secao-videos" data-painel="videos" hidden>
             <h2>Vídeos disponíveis</h2>
             <div id="listaVideos">Carregando vídeos...</div>
             <div class="bloco-form">
