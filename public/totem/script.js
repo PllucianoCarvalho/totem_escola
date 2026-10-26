@@ -19,15 +19,17 @@ function mostrarSomente(elemento) {
     paginaHorarios.style.display = elemento === paginaHorarios ? "block" : "none";
 }
 
-async function exibirHorariosEImagens() {
+async function exibirHorariosEImagens(aindaValido) {
     mostrarSomente(paginaHorarios);
     await esperar(TEMPO_HORARIOS_MS);
+    if (!aindaValido()) return;
 
     for (const item of imagensAtuais) {
         if (!item.imagem) continue;
         imagem.src = `/imagens/${encodeURIComponent(item.imagem)}`;
         mostrarSomente(imagem);
         await esperar((Number(item.duracao) || 10) * 1000);
+        if (!aindaValido()) return;
     }
 }
 
@@ -39,7 +41,7 @@ async function iniciarModoSemVideo() {
 
     while (modoSemVideoAtivo && cicloId === cicloSemVideoId && !videoAtual) {
         try {
-            await exibirHorariosEImagens();
+            await exibirHorariosEImagens(() => modoSemVideoAtivo && cicloId === cicloSemVideoId && !videoAtual);
         } catch (erro) {
             console.error("Erro no ciclo sem vídeo:", erro);
             await esperar(1000);
@@ -108,7 +110,7 @@ video.addEventListener("ended", async () => {
     transicaoEmAndamento = true;
 
     try {
-        await exibirHorariosEImagens();
+        await exibirHorariosEImagens(() => Boolean(videoAtual));
 
         if (videoAtual) {
             mostrarSomente(video);
