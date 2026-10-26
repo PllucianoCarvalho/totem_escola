@@ -140,10 +140,20 @@ function preencherCamposConfiguracao(config) {
 }
 
 function norm(v) { return String(v || "").normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLocaleLowerCase("pt-BR").trim(); }
+const filtroListaProfessor = document.getElementById("filtroListaProfessor");
+const resultadoFiltroLista = document.getElementById("resultadoFiltroLista");
+
 function renderizar() {
   linhas.innerHTML = "";
+  const termoFiltro = norm(filtroListaProfessor?.value || "");
+  const filtrados = registros.map((registro, indice) => ({ registro, indice }))
+    .filter(item => !termoFiltro || norm(item.registro.professor).includes(termoFiltro));
+  if (resultadoFiltroLista) resultadoFiltroLista.textContent = termoFiltro
+    ? "Exibindo " + filtrados.length + " de " + registros.length + " registro(s) para “" + filtroListaProfessor.value.trim() + "”."
+    : "Exibindo todos os " + registros.length + " registro(s).";
   if (!registros.length) { linhas.innerHTML = '<tr><td colspan="5" class="vazio">Nenhum registro. Importe o relatório ou adicione uma linha manualmente.</td></tr>'; atualizarSubstituicaoLote(); return; }
-  registros.forEach((r, i) => {
+  if (!filtrados.length) { linhas.innerHTML = '<tr><td colspan="5" class="vazio">Nenhum professor corresponde ao filtro.</td></tr>'; atualizarSubstituicaoLote(); return; }
+  filtrados.forEach(({ registro: r, indice: i }) => {
     const tr = document.createElement("tr");
     [["professor","Professor"],["turma","Turma"],["componente","Componente"],["horario","Dia e período"]].forEach(([key,label]) => {
       const td = document.createElement("td"), input = document.createElement("input");
@@ -157,6 +167,8 @@ function renderizar() {
   });
   atualizarSubstituicaoLote();
 }
+filtroListaProfessor?.addEventListener("input", renderizar);
+
 const buscaProfessorLote = document.getElementById("buscarProfessorLote");
 const substituiProfessorLote = document.getElementById("substituirProfessorLote");
 const botaoSubstituirLote = document.getElementById("substituirTodosProfessores");
