@@ -35,3 +35,15 @@
 .acoes-fonte-oficial button{background:#12355a;border-bottom:4px solid #008a3b}
 .acoes-fonte-oficial p{margin:12px 0 0;color:#66737d;line-height:1.5}
 .atalhos-horarios .voltar{color:#0067b0}
+
+/* Localizar e substituir em lote na revisão dos registros */
+.substituicao-lote{margin:18px 0;padding:18px;border:1px solid #cbd7eb;border-radius:12px;background:#f7f9ff}
+.substituicao-lote h3{margin:0 0 6px;color:#173a72;font-size:17px}
+.substituicao-lote>p{margin:6px 0 12px}
+.substituicao-campos{display:grid;grid-template-columns:minmax(180px,1fr) minmax(180px,1fr) auto;gap:12px;align-items:end}
+.substituicao-campos label{margin:0;font-size:13px}
+.substituicao-campos input{display:block;width:100%;min-width:0;margin-top:7px;padding:11px;border:1px solid #cbd3df;border-radius:8px;background:#fff}
+.substituicao-campos button{min-height:41px;white-space:nowrap}
+.substituicao-campos button:disabled{opacity:.45;cursor:not-allowed}
+#resultadoSubstituicao{margin:12px 0 0;font-size:13px;font-weight:700;color:#1749d1}
+@media(max-width:700px){.substituicao-campos{grid-template-columns:1fr}.substituicao-campos button{width:100%}}
