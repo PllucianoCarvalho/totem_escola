@@ -142,7 +142,7 @@ function preencherCamposConfiguracao(config) {
 function norm(v) { return String(v || "").normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLocaleLowerCase("pt-BR").trim(); }
 function renderizar() {
   linhas.innerHTML = "";
-  if (!registros.length) { linhas.innerHTML = '<tr><td colspan="5" class="vazio">Nenhum registro. Importe um relatório ou adicione uma linha manualmente.</td></tr>'; return; }
+  if (!registros.length) { linhas.innerHTML = '<tr><td colspan="5" class="vazio">Nenhum registro. Importe o relatório ou adicione uma linha manualmente.</td></tr>'; atualizarSubstituicaoLote(); return; }
   registros.forEach((r, i) => {
     const tr = document.createElement("tr");
     [["professor","Professor"],["turma","Turma"],["componente","Componente"],["horario","Dia e período"]].forEach(([key,label]) => {
@@ -155,7 +155,37 @@ function renderizar() {
     btn.addEventListener("click", () => { registros.splice(i,1); renderizar(); });
     td.appendChild(btn); tr.appendChild(td); linhas.appendChild(tr);
   });
+  atualizarSubstituicaoLote();
 }
+const buscaProfessorLote = document.getElementById("buscarProfessorLote");
+const substituiProfessorLote = document.getElementById("substituirProfessorLote");
+const botaoSubstituirLote = document.getElementById("substituirTodosProfessores");
+const resultadoSubstituicao = document.getElementById("resultadoSubstituicao");
+
+function atualizarSubstituicaoLote() {
+  if (!buscaProfessorLote) return;
+  const termo = norm(buscaProfessorLote.value);
+  const encontrados = termo ? registros.filter(r => norm(r.professor).includes(termo)).length : 0;
+  resultadoSubstituicao.textContent = termo
+    ? encontrados + " registro(s) encontrado(s) na coluna Professor."
+    : "Digite um nome para localizar os registros.";
+  botaoSubstituirLote.disabled = !termo || encontrados === 0 || !substituiProfessorLote.value.trim();
+}
+[buscaProfessorLote, substituiProfessorLote].forEach(campo => campo.addEventListener("input", atualizarSubstituicaoLote));
+botaoSubstituirLote.addEventListener("click", () => {
+  const termo = norm(buscaProfessorLote.value);
+  const novoNome = substituiProfessorLote.value.trim();
+  if (!termo || !novoNome) return;
+  const encontrados = registros.filter(r => norm(r.professor).includes(termo));
+  if (!encontrados.length) return;
+  const confirmar = window.confirm("Substituir o nome do professor em " + encontrados.length + " registro(s)?\n\nLocalizar: " + buscaProfessorLote.value.trim() + "\nSubstituir por: " + novoNome + "\n\nA alteração será aplicada aos registros em edição. Para atualizar a grade publicada, clique em Salvar e publicar horários revisados.");
+  if (!confirmar) return;
+  registros.forEach(r => {
+    if (norm(r.professor).includes(termo)) r.professor = novoNome;
+  });
+  renderizar();
+  resultadoSubstituicao.textContent = encontrados.length + " registro(s) atualizado(s) para " + novoNome + ". Ainda é necessário salvar e publicar os horários.";
+});
 const filtroProfessor = document.getElementById("filtroProfessor");
 const filtroTurma = document.getElementById("filtroTurma");
 const filtroComponente = document.getElementById("filtroComponente");
