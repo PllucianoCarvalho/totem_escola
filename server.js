@@ -202,6 +202,11 @@ app.post("/api/video/ativar", protegerApi, (req, res) => {
     res.json({ sucesso: true, video });
 });
 
+app.post("/api/video/desativar", protegerApi, (req, res) => {
+    db.prepare("UPDATE configuracoes SET video = NULL WHERE id = 1").run();
+    res.json({ sucesso: true });
+});
+
 app.get("/api/video", (req, res) => {
     const config = db.prepare("SELECT video FROM configuracoes WHERE id = 1").get();
     res.json({ video: config.video });
