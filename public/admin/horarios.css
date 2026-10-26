@@ -47,3 +47,11 @@
 .substituicao-campos button:disabled{opacity:.45;cursor:not-allowed}
 #resultadoSubstituicao{margin:12px 0 0;font-size:13px;font-weight:700;color:#1749d1}
 @media(max-width:700px){.substituicao-campos{grid-template-columns:1fr}.substituicao-campos button{width:100%}}
+
+
+/* Filtro instantâneo da lista de revisão */
+.filtro-revisao{display:grid;grid-template-columns:minmax(220px,420px) 1fr;gap:12px;align-items:end;margin:18px 0 8px;padding:14px;border:1px solid #e0e5ed;border-radius:10px;background:#fbfcff}
+.filtro-revisao label{margin:0;font-size:13px}
+.filtro-revisao input{display:block;width:100%;margin-top:7px;padding:11px;border:1px solid #cbd3df;border-radius:8px;background:#fff}
+.filtro-revisao p{margin:0 0 10px;font-size:13px;font-weight:700;color:#1749d1}
+@media(max-width:600px){.filtro-revisao{grid-template-columns:1fr}}
