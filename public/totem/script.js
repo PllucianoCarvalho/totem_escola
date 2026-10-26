@@ -3,95 +3,130 @@ const imagem = document.getElementById("imagem");
 const aviso = document.getElementById("aviso");
 const paginaHorarios = document.getElementById("paginaHorarios");
 
-// Ciclo do Totem: vídeo até o fim -> horários -> imagens -> vídeo.
 const TEMPO_HORARIOS_MS = 30 * 1000;
 let videoAtual = null;
 let avisosAtuais = [];
 let imagensAtuais = [];
 let transicaoEmAndamento = false;
+let cicloSemVideoId = 0;
+let modoSemVideoAtivo = false;
+
+const esperar = tempo => new Promise(resolve => setTimeout(resolve, tempo));
+
+function mostrarSomente(elemento) {
+    video.style.display = elemento === video ? "block" : "none";
+    imagem.style.display = elemento === imagem ? "block" : "none";
+    paginaHorarios.style.display = elemento === paginaHorarios ? "block" : "none";
+}
+
+async function exibirHorariosEImagens() {
+    mostrarSomente(paginaHorarios);
+    await esperar(TEMPO_HORARIOS_MS);
+
+    for (const item of imagensAtuais) {
+        if (!item.imagem) continue;
+        imagem.src = `/imagens/${encodeURIComponent(item.imagem)}`;
+        mostrarSomente(imagem);
+        await esperar((Number(item.duracao) || 10) * 1000);
+    }
+}
+
+async function iniciarModoSemVideo() {
+    if (modoSemVideoAtivo) return;
+
+    modoSemVideoAtivo = true;
+    const cicloId = ++cicloSemVideoId;
+
+    while (modoSemVideoAtivo && cicloId === cicloSemVideoId && !videoAtual) {
+        try {
+            await exibirHorariosEImagens();
+        } catch (erro) {
+            console.error("Erro no ciclo sem vídeo:", erro);
+            await esperar(1000);
+        }
+    }
+}
+
+function encerrarModoSemVideo() {
+    modoSemVideoAtivo = false;
+    cicloSemVideoId++;
+}
 
 async function verificarVideo() {
     try {
-        const response = await fetch("/api/video");
+        const response = await fetch("/api/video", { cache: "no-store" });
         if (!response.ok) throw new Error("Erro ao consultar o vídeo.");
 
         const data = await response.json();
+
         if (!data.video) {
-            console.log("Nenhum vídeo configurado.");
+            if (videoAtual) {
+                video.pause();
+                video.removeAttribute("src");
+                video.load();
+                videoAtual = null;
+            }
+
+            if (!transicaoEmAndamento) iniciarModoSemVideo();
             return;
         }
 
         const novoVideo = `/videos/${encodeURIComponent(data.video)}`;
         if (videoAtual === novoVideo) return;
 
+        encerrarModoSemVideo();
         videoAtual = novoVideo;
         video.src = novoVideo;
         video.load();
 
-        imagem.style.display = "none";
-        video.style.display = "block";
-
         try {
             await video.play();
+            mostrarSomente(video);
         } catch (erro) {
             console.log("Autoplay aguardando interação.");
         }
     } catch (erro) {
         console.error("Erro ao consultar vídeo:", erro);
+        if (!videoAtual && !transicaoEmAndamento) iniciarModoSemVideo();
     }
 }
 
 async function verificarImagem() {
     try {
-        const response = await fetch("/api/imagem");
+        const response = await fetch("/api/imagem", { cache: "no-store" });
         if (!response.ok) throw new Error("Erro ao consultar imagens.");
 
         const data = await response.json();
         imagensAtuais = Array.isArray(data.imagens) ? data.imagens : [];
-
-        console.log("Imagens disponíveis:", imagensAtuais);
     } catch (erro) {
         console.error("Erro ao consultar imagens:", erro);
     }
 }
 
 video.addEventListener("ended", async () => {
-    if (transicaoEmAndamento) return;
+    if (transicaoEmAndamento || !videoAtual) return;
     transicaoEmAndamento = true;
 
     try {
-        // Mostrar a grade imediatamente quando o vídeo terminar.
-        video.style.display = "none";
-        imagem.style.display = "none";
-        paginaHorarios.style.display = "block";
-        await new Promise(resolve => setTimeout(resolve, TEMPO_HORARIOS_MS));
-        paginaHorarios.style.display = "none";
+        await exibirHorariosEImagens();
 
-        // Depois da grade, mostrar cada imagem pelo tempo configurado.
-        for (let i = 0; i < imagensAtuais.length; i++) {
-            const imagemAtual = imagensAtuais[i];
-            imagem.src = `/imagens/${encodeURIComponent(imagemAtual.imagem)}`;
-            imagem.style.display = "block";
-            console.log(`Exibindo imagem ${i + 1}/${imagensAtuais.length}: ${imagemAtual.imagem} por ${imagemAtual.duracao}s`);
-            await new Promise(resolve => {
-                setTimeout(resolve, (Number(imagemAtual.duracao) || 10) * 1000);
-            });
-        }
-
-        imagem.style.display = "none";
-        video.style.display = "block";
-        if (video.src) {
+        if (videoAtual) {
+            mostrarSomente(video);
             video.currentTime = 0;
             await video.play();
+        } else {
+            iniciarModoSemVideo();
         }
     } catch (erro) {
         console.error("Erro durante a transição do Totem:", erro);
-        paginaHorarios.style.display = "none";
-        imagem.style.display = "none";
-        video.style.display = "block";
-        if (video.src) {
-            try { video.currentTime = 0; await video.play(); }
-            catch (erroReproducao) { console.error("Não foi possível retomar o vídeo:", erroReproducao); }
+        if (videoAtual) {
+            mostrarSomente(video);
+            try {
+                video.currentTime = 0;
+                await video.play();
+            } catch (erroReproducao) {
+                console.error("Não foi possível retomar o vídeo:", erroReproducao);
+            }
         }
     } finally {
         transicaoEmAndamento = false;
@@ -129,11 +164,10 @@ function atualizarAviso() {
     aviso.style.display = "block";
 }
 
-verificarVideo();
 verificarImagem();
 verificarAvisos();
+verificarVideo();
 
 setInterval(verificarVideo, 10 * 1000);
 setInterval(verificarImagem, 10 * 1000);
 setInterval(verificarAvisos, 10 * 1000);
-
