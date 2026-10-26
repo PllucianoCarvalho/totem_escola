@@ -65,6 +65,20 @@
         <div><h2>3. Revisar os registros</h2><p>Os campos são editáveis. Use uma linha para cada aula/atribuição.</p></div>
         <button id="adicionarLinha" class="secundario" type="button">+ Adicionar linha</button>
       </div>
+      <div class="substituicao-lote">
+        <h3>Localizar e substituir professor</h3>
+        <p>Encontre registros pelo nome do professor e substitua o nome em todas as aulas correspondentes.</p>
+        <div class="substituicao-campos">
+          <label for="buscarProfessorLote">Localizar nome
+            <input id="buscarProfessorLote" type="search" placeholder="Ex.: João da Silva" autocomplete="off">
+          </label>
+          <label for="substituirProfessorLote">Substituir por
+            <input id="substituirProfessorLote" type="text" placeholder="Ex.: AUSENTE" autocomplete="off">
+          </label>
+          <button id="substituirTodosProfessores" type="button" disabled>Substituir todos</button>
+        </div>
+        <p id="resultadoSubstituicao" role="status" aria-live="polite">Digite um nome para localizar os registros.</p>
+      </div>
       <div class="tabela-wrap">
         <table>
           <thead><tr><th>Professor</th><th>Turma</th><th>Componente</th><th>Horário letivo</th><th></th></tr></thead>
