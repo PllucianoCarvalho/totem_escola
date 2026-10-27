@@ -243,7 +243,9 @@ function lerAula(valor) {
 }
 async function converter(file) {
   const bytes=await file.arrayBuffer();
-  const source=new TextDecoder("windows-1252").decode(bytes);
+  let source;
+  try { source = new TextDecoder("utf-8", { fatal: true }).decode(bytes); }
+  catch { source = new TextDecoder("windows-1252").decode(bytes); }
   const doc=new DOMParser().parseFromString(source,"text/html");
   const table=doc.querySelector("table");
   if(!table) throw new Error("Não encontrei uma tabela HTML. Exporte novamente o relatório geral do Urânia+.");
@@ -336,16 +338,16 @@ document.getElementById("salvarConfiguracao").addEventListener("click", async ()
     if (!response.ok) throw new Error(data.erro || "Não foi possível salvar a configuração.");
     preencherCamposConfiguracao(data.configuracao);
     statusConfiguracao.textContent = "Configuração salva. Os horários serão recalculados para os períodos publicados.";
-    await carregarAtual();
+    await carregarAtual(true);
   } catch (err) {
     statusConfiguracao.textContent = "Erro: " + err.message;
   }
 });
 
-async function carregarAtual(){
+async function carregarAtual(preservarRascunho = false){
   try{
     const response=await fetch("/api/horarios");if(!response.ok)throw new Error();
-    const data=await response.json();preencherCamposConfiguracao(data.configuracao);registros=data.professores||[];aulasPublicadas=aplicarHorariosCalculados(Array.isArray(data.aulas)?data.aulas:[], configuracaoHorario);
+    const data=await response.json();preencherCamposConfiguracao(data.configuracao);if(!preservarRascunho)registros=data.professores||[];aulasPublicadas=aplicarHorariosCalculados(Array.isArray(data.aulas)?data.aulas:[], configuracaoHorario);
     renderizar();prepararDias();
     estadoAtual.textContent=data.atualizadoEm?"Última publicação: "+new Date(data.atualizadoEm).toLocaleString("pt-BR")+" · "+aulasPublicadas.length+" aulas.":"Ainda não há horários publicados.";
   }catch{estadoAtual.textContent="Não foi possível consultar a versão publicada.";}
