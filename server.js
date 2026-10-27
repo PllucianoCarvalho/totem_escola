@@ -139,6 +139,12 @@ app.get(["/admin", "/admin/"], (req, res) => {
 });
 
 app.use("/amostradinho", protegerAmostradinho);
+
+// A página de edição de horários também exige autenticação.
+app.get("/admin/horarios.html", protegerAmostradinho, (req, res) => {
+    res.sendFile(path.join(__dirname, "public", "admin", "horarios.html"));
+});
+
 app.use(express.static(path.join(__dirname, "public")));
 app.use("/videos", express.static(videosPath));
 app.use("/imagens", express.static(imagensPath));
