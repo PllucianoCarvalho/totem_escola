@@ -141,6 +141,10 @@ app.get(["/admin", "/admin/"], (req, res) => {
 app.use("/amostradinho", protegerAmostradinho);
 
 // A página de edição de horários também exige autenticação.
+app.get("/admin/horarios-oficiais.js", protegerAmostradinho, (req, res) => {
+    res.sendFile(path.join(__dirname, "public", "admin", "horarios-oficiais.js"));
+});
+
 app.get("/admin/horarios.html", protegerAmostradinho, (req, res) => {
     res.sendFile(path.join(__dirname, "public", "admin", "horarios.html"));
 });
@@ -287,6 +291,8 @@ app.get("/api/horarios", (req, res) => {
         res.status(500).json({ erro: "Não foi possível carregar os horários." });
     }
 });
+function minutosConfig(valor) { const [h, m] = valor.split(":").map(Number); return h * 60 + m; }
+
 app.put("/api/horarios/configuracao", protegerApi, (req, res) => {
     const entrada = req.body || {};
     const tipoEscola = String(entrada.tipoEscola || "").trim();
@@ -307,6 +313,10 @@ app.put("/api/horarios/configuracao", protegerApi, (req, res) => {
     }
     if (!Number.isInteger(duracaoIntervalo) || duracaoIntervalo < 5 || duracaoIntervalo > 120) {
         return res.status(400).json({ erro: "A duração do intervalo deve estar entre 5 e 120 minutos." });
+    }
+
+    if (minutosConfig(inicioIntervalo) <= minutosConfig(inicioAulas)) {
+        return res.status(400).json({ erro: "O intervalo deve começar depois do início das aulas." });
     }
 
     const configuracao = { tipoEscola, inicioAulas, duracaoAula, inicioIntervalo, duracaoIntervalo };
