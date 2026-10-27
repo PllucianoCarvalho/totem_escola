@@ -4,11 +4,11 @@ Sistema web para exibição de vídeos, sequência de imagens e avisos escolares
 
 ## Funcionalidades
 
-- Reprodução contínua do vídeo ativo.
+- Reprodução contínua do vídeo ativo, com opção de desativar ou excluir inclusive o vídeo atualmente ativo.
 - Sequência de várias imagens após o vídeo, cada uma com duração própria.
 - Gerenciamento individual de imagens publicadas.
 - Cadastro, edição e exclusão de avisos com período de exibição.
-- Painel administrativo protegido por sessão.
+- Painel administrativo protegido por sessão em `/amostradinho`; o endereço antigo `/admin` redireciona para o painel oficial.
 - Rotas de alteração da API protegidas por autenticação.
 - Armazenamento local de mídias e SQLite.
 - Importação da grade de professores a partir do relatório HTML do Urânia+, com prévia revisável antes da publicação.
@@ -106,7 +106,8 @@ As rotas de leitura usadas pela tela do Totem permanecem disponíveis sem login.
 | GET | `/api/videos` | Lista vídeos e vídeo ativo |
 | POST | `/api/video` | Envia um vídeo MP4 (login necessário) |
 | POST | `/api/video/ativar` | Define o vídeo ativo (login necessário) |
-| DELETE | `/api/videos/:video` | Exclui vídeo não ativo (login necessário) |
+| POST | `/api/video/desativar` | Desativa o vídeo atual sem apagar o arquivo (login necessário) |
+| DELETE | `/api/videos/:video` | Exclui um vídeo, inclusive o atualmente ativo (login necessário) |
 | GET | `/api/video` | Consulta vídeo ativo |
 | GET/POST | `/api/imagem` | Consulta a lista / adiciona imagem (POST exige login) |
 | DELETE | `/api/imagem/:id` | Exclui uma imagem (login necessário) |
