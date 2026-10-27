@@ -22,3 +22,6 @@
 *.backup
 *.save
 *.antes-senha
+
+/dados/horarios-config.json
+/dados/horarios/
