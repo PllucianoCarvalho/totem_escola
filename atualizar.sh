@@ -18,8 +18,9 @@ BRANCH="$(git branch --show-current)"
 [ "$BRANCH" = "main" ] || fail "A atualização deve ser executada na branch main. Branch atual: $BRANCH"
 
 git rev-parse --is-inside-work-tree >/dev/null 2>&1 || fail "Esta pasta não é um repositório Git."
-git diff --quiet || fail "Há alterações locais não commitadas. Faça backup e resolva-as antes de atualizar."
-git diff --cached --quiet || fail "Há alterações preparadas no Git. Faça commit ou resolva-as antes de atualizar."
+if [ -n "$(git status --porcelain --untracked-files=all)" ]; then
+  fail "Há alterações ou arquivos novos não ignorados nesta pasta. Faça backup e resolva-os antes de atualizar."
+fi
 
 [ -f ".env" ] || fail "Arquivo .env não encontrado. A atualização foi cancelada para proteger a configuração."
 [ -f "package-lock.json" ] || fail "package-lock.json não encontrado."
@@ -51,8 +52,13 @@ git pull --ff-only origin main || fail "Falha ao atualizar o código. O backup f
 
 log "Instalando dependências conforme package-lock.json..."
 if ! npm ci; then
-  printf '\n[ERRO] npm ci falhou. O backup foi preservado em: %s\n' "$BACKUP_FILE" >&2
-  printf '[ERRO] O código pode já ter sido atualizado; não reinicie o serviço até corrigir a instalação.\n' >&2
+  printf '\n[ERRO] npm ci falhou. Restaurando a versão anterior do código...\n' >&2
+  if git reset --hard "$OLD_COMMIT"; then
+    printf '[ERRO] Código restaurado para %s. O backup dos dados foi preservado em: %s\n' "$OLD_COMMIT" "$BACKUP_FILE" >&2
+    printf '[ERRO] As dependências podem precisar ser reinstaladas com npm ci após corrigir a causa da falha.\n' >&2
+  else
+    printf '[ERRO] Não foi possível restaurar o código automaticamente. Não reinicie o serviço; backup: %s\n' "$BACKUP_FILE" >&2
+  fi
   exit 1
 fi
 
