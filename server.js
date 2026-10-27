@@ -164,16 +164,19 @@ app.get("/api/videos", (req, res) => {
 });
 
 app.delete("/api/videos/:video", protegerApi, (req, res) => {
-    const video = req.params.video;
-    const config = db.prepare("SELECT video FROM configuracoes WHERE id = 1").get();
-
-    if (config.video === video) {
-        return res.status(400).json({ erro: "Não é possível excluir o vídeo que está ativo." });
+    const video = path.basename(req.params.video);
+    if (!video || video !== req.params.video) {
+        return res.status(400).json({ erro: "Nome de vídeo inválido." });
     }
 
-    const caminhoVideo = path.join(videosPath, path.basename(video));
+    const caminhoVideo = path.join(videosPath, video);
     if (!fs.existsSync(caminhoVideo)) {
         return res.status(404).json({ erro: "Vídeo não encontrado." });
+    }
+
+    const config = db.prepare("SELECT video FROM configuracoes WHERE id = 1").get();
+    if (config.video === video) {
+        db.prepare("UPDATE configuracoes SET video = NULL WHERE id = 1").run();
     }
 
     fs.unlinkSync(caminhoVideo);
