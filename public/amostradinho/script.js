@@ -250,6 +250,23 @@ function formatarData(data) {
     });
 }
 
+async function desativarVideo() {
+    if (!confirm("Desativar o vídeo atual? O arquivo continuará salvo e poderá ser ativado novamente.")) return;
+
+    statusVideo.textContent = "Desativando vídeo...";
+    try {
+        const response = await fetch("/api/video/desativar", { method: "POST" });
+        const data = await response.json();
+        if (!response.ok) throw new Error(data.erro || "Erro ao desativar vídeo.");
+
+        statusVideo.textContent = "Vídeo desativado. O totem exibirá horários e imagens.";
+        await carregarVideos();
+    } catch (error) {
+        console.error(error);
+        statusVideo.textContent = "Erro: " + error.message;
+    }
+}
+
 async function excluirVideo(video) {
     if (!confirm(`Excluir o vídeo "${video}"?`)) return;
 
