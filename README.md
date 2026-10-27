@@ -84,6 +84,20 @@ Em outro computador da mesma rede, substitua `IP_DO_SERVIDOR` pelo endereço exi
 
 Após entrar no painel, envie um vídeo em formato MP4 e clique em **Ativar**. A instalação começa sem vídeo ativo e sem avisos ou imagens cadastrados; esses dados são adicionados pelo painel.
 
+## Atualizar uma instalação existente
+
+Depois que as alterações forem integradas à branch `main`, atualize o servidor a partir da pasta do projeto:
+
+```bash
+bash atualizar.sh
+```
+
+O script só executa na branch `main`, exige que não haja alterações locais pendentes e verifica se a atualização pode ser feita por avanço direto. Antes de atualizar, cria um arquivo compactado de backup com `.env` e toda a pasta `dados/` em `../backups-totem/`. Em seguida, busca a `main` do GitHub e instala as dependências com `npm ci`.
+
+O atualizador não restaura nem substitui a pasta `dados/` durante a atualização: os horários versionados são atualizados pelo Git, enquanto vídeos, imagens, banco SQLite e demais dados locais permanecem no servidor. O arquivo `.env` também permanece no lugar.
+
+O script não reinicia automaticamente o serviço, pois o nome e o método de inicialização podem variar entre servidores. Após a atualização, reinicie o serviço conforme a configuração local e confira o login do painel, a tela do Totem e os horários. Não execute o atualizador antes de a PR de desenvolvimento ser integrada à `main`.
+
 ## Resolução de problemas
 
 - **Variáveis de ambiente ausentes:** confira se o arquivo `.env` existe e se `SESSION_SECRET`, `ADMIN_USERNAME` e `ADMIN_PASSWORD` estão preenchidos.
