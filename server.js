@@ -19,7 +19,7 @@ const SESSION_SECRET = process.env.SESSION_SECRET;
 const USUARIO_ADMIN = process.env.ADMIN_USERNAME;
 const SENHA_ADMIN = process.env.ADMIN_PASSWORD;
 
-app.use(express.json({ limit: "1mb" }));
+app.use(express.json({ limit: "10mb" }));
 
 app.use(session({
     secret: SESSION_SECRET,
