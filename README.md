@@ -115,8 +115,10 @@ As rotas de leitura usadas pela tela do Totem permanecem disponíveis sem login.
 
 ## Dados locais e versionamento
 
-O banco SQLite é criado automaticamente em `dados/totem.db`. Vídeos, imagens e configurações locais também são gravados na pasta `dados/`; esses dados não precisam estar no GitHub e não devem ser versionados.
+O banco SQLite é criado automaticamente em `dados/totem.db`. Vídeos, imagens enviadas e o banco de dados ficam em `dados/` e não devem ser versionados.
 
-O `.gitignore` exclui dependências instaladas, uploads, bancos de dados, configurações locais e backups. Versione o código e os arquivos de exemplo, não os dados reais da escola.
+A grade atual de horários da escola (`dados/horarios.json`) e sua configuração (`dados/horarios-config.json`) são mantidas no GitHub intencionalmente para que a instalação publicada já tenha os horários disponíveis. Atualize esses arquivos pelo fluxo de revisão e publicação da grade quando houver mudanças.
+
+O `.gitignore` exclui dependências instaladas, uploads de mídia, bancos de dados e backups. Não adicione credenciais, banco SQLite ou arquivos de mídia reais ao repositório.
 
 **Importante:** arquivos de mídia, bancos e dependências que tenham sido adicionados a commits antigos continuam no histórico do GitHub, mesmo quando removidos das versões mais recentes. Para eliminá-los do histórico é necessário reescrevê-lo e verificar novamente se algum segredo foi publicado.
