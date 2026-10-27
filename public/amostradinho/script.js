@@ -60,27 +60,31 @@ async function carregarVideos() {
             nome.textContent = video;
             item.appendChild(nome);
 
+            const botoes = document.createElement("div");
+            botoes.className = "botoes-video";
+
             if (video === data.ativo) {
                 const ativo = document.createElement("strong");
                 ativo.textContent = "ATIVO";
                 ativo.className = "ativo";
                 item.appendChild(ativo);
-            } else {
-                const botoes = document.createElement("div");
-                botoes.className = "botoes-video";
 
+                const botaoDesativar = document.createElement("button");
+                botaoDesativar.textContent = "Desativar";
+                botaoDesativar.addEventListener("click", desativarVideo);
+                botoes.appendChild(botaoDesativar);
+            } else {
                 const botaoAtivar = document.createElement("button");
                 botaoAtivar.textContent = "Ativar";
                 botaoAtivar.addEventListener("click", () => ativarVideo(video));
-
-                const botaoExcluir = document.createElement("button");
-                botaoExcluir.textContent = "Excluir";
-                botaoExcluir.addEventListener("click", () => excluirVideo(video));
-
                 botoes.appendChild(botaoAtivar);
-                botoes.appendChild(botaoExcluir);
-                item.appendChild(botoes);
             }
+
+            const botaoExcluir = document.createElement("button");
+            botaoExcluir.textContent = "Excluir";
+            botaoExcluir.addEventListener("click", () => excluirVideo(video));
+            botoes.appendChild(botaoExcluir);
+            item.appendChild(botoes);
 
             listaVideos.appendChild(item);
         });
