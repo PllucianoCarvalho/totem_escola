@@ -134,6 +134,10 @@ const uploadImagem = multer({
     }
 });
 
+app.get(["/admin", "/admin/"], (req, res) => {
+    res.redirect(301, "/amostradinho/");
+});
+
 app.use("/amostradinho", protegerAmostradinho);
 app.use(express.static(path.join(__dirname, "public")));
 app.use("/videos", express.static(videosPath));
