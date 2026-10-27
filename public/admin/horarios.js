@@ -155,10 +155,17 @@ function renderizar() {
   if (!filtrados.length) { linhas.innerHTML = '<tr><td colspan="5" class="vazio">Nenhum professor corresponde ao filtro.</td></tr>'; atualizarSubstituicaoLote(); return; }
   filtrados.forEach(({ registro: r, indice: i }) => {
     const tr = document.createElement("tr");
-    [["professor","Professor"],["turma","Turma"],["componente","Componente"],["horario","Dia e período"]].forEach(([key,label]) => {
+    [["professor","Professor"],["turma","Turma"],["componente","Componente"],["dia","Dia da semana"],["horario","Horário ou nº do período"]].forEach(([key,label]) => {
       const td = document.createElement("td"), input = document.createElement("input");
       input.value = r[key] || ""; input.placeholder = label; input.setAttribute("aria-label",label);
-      input.addEventListener("input", () => r[key] = input.value); td.appendChild(input); tr.appendChild(td);
+      input.addEventListener("input", () => {
+        r[key] = input.value;
+        if (key === "horario") {
+          const periodo = input.value.trim().match(/^(?:0*)?(\\d{1,2})(?:º|°)?(?:\\s*per[ií]odo)?$/i);
+          if (periodo) r.periodo = periodo[1];
+        }
+      });
+      td.appendChild(input); tr.appendChild(td);
     });
     const td = document.createElement("td"), btn = document.createElement("button");
     btn.type = "button"; btn.className = "remover"; btn.textContent = "Excluir";
