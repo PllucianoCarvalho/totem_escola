@@ -49,6 +49,12 @@ jobs:
 
           curl --fail --silent http://127.0.0.1:3100/login >/dev/null
           curl --fail --silent http://127.0.0.1:3100/totem >/dev/null
+          curl --fail --silent http://127.0.0.1:3100/horarios >/dev/null
+
+          admin_page_status=$(curl --silent --output /dev/null --write-out '%{http_code}' http://127.0.0.1:3100/admin/horarios.html)
+          test "$admin_page_status" = "302"
+          official_data_status=$(curl --silent --output /dev/null --write-out '%{http_code}' http://127.0.0.1:3100/admin/horarios-oficiais.js)
+          test "$official_data_status" = "302"
 
           unauth_status=$(curl --silent --output /dev/null --write-out '%{http_code}' \
             -X POST http://127.0.0.1:3100/api/avisos \
