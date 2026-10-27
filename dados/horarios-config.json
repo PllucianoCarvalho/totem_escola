@@ -1,0 +1,7 @@
+{
+  "tipoEscola": "regular",
+  "inicioAulas": "07:00",
+  "duracaoAula": 50,
+  "inicioIntervalo": "09:30",
+  "duracaoIntervalo": 10
+}
