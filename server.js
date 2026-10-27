@@ -315,8 +315,8 @@ app.put("/api/horarios/configuracao", protegerApi, (req, res) => {
         return res.status(400).json({ erro: "A duração do intervalo deve estar entre 5 e 120 minutos." });
     }
 
-    if (minutosConfig(inicioIntervalo) <= minutosConfig(inicioAulas)) {
-        return res.status(400).json({ erro: "O intervalo deve começar depois do início das aulas." });
+    if (minutosConfig(inicioIntervalo) < minutosConfig(inicioAulas) + duracaoAula) {
+        return res.status(400).json({ erro: "O intervalo deve começar após o término da primeira aula." });
     }
 
     const configuracao = { tipoEscola, inicioAulas, duracaoAula, inicioIntervalo, duracaoIntervalo };
