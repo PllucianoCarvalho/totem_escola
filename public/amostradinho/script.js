@@ -1,3 +1,30 @@
+document.querySelectorAll(".menu-opcao").forEach(botao => {
+    botao.addEventListener("click", () => {
+        const jaSelecionado = botao.classList.contains("ativa");
+
+        document.querySelectorAll(".menu-opcao").forEach(opcao => {
+            opcao.classList.remove("ativa");
+            opcao.setAttribute("aria-pressed", "false");
+        });
+
+        document.querySelectorAll("[data-painel]").forEach(painel => {
+            painel.hidden = true;
+            painel.classList.remove("selecionada");
+        });
+
+        if (jaSelecionado) return;
+
+        botao.classList.add("ativa");
+        botao.setAttribute("aria-pressed", "true");
+
+        const painelAtivo = document.querySelector(`[data-painel="${botao.dataset.secao}"]`);
+        if (painelAtivo) {
+            painelAtivo.hidden = false;
+            painelAtivo.classList.add("selecionada");
+        }
+    });
+});
+
 const formVideo = document.getElementById("videoForm");
 const inputVideo = document.getElementById("videoInput");
 const statusVideo = document.getElementById("statusVideo");
@@ -33,27 +60,31 @@ async function carregarVideos() {
             nome.textContent = video;
             item.appendChild(nome);
 
+            const botoes = document.createElement("div");
+            botoes.className = "botoes-video";
+
             if (video === data.ativo) {
                 const ativo = document.createElement("strong");
                 ativo.textContent = "ATIVO";
                 ativo.className = "ativo";
                 item.appendChild(ativo);
-            } else {
-                const botoes = document.createElement("div");
-                botoes.className = "botoes-video";
 
+                const botaoDesativar = document.createElement("button");
+                botaoDesativar.textContent = "Desativar";
+                botaoDesativar.addEventListener("click", desativarVideo);
+                botoes.appendChild(botaoDesativar);
+            } else {
                 const botaoAtivar = document.createElement("button");
                 botaoAtivar.textContent = "Ativar";
                 botaoAtivar.addEventListener("click", () => ativarVideo(video));
-
-                const botaoExcluir = document.createElement("button");
-                botaoExcluir.textContent = "Excluir";
-                botaoExcluir.addEventListener("click", () => excluirVideo(video));
-
                 botoes.appendChild(botaoAtivar);
-                botoes.appendChild(botaoExcluir);
-                item.appendChild(botoes);
             }
+
+            const botaoExcluir = document.createElement("button");
+            botaoExcluir.textContent = "Excluir";
+            botaoExcluir.addEventListener("click", () => excluirVideo(video));
+            botoes.appendChild(botaoExcluir);
+            item.appendChild(botoes);
 
             listaVideos.appendChild(item);
         });
@@ -217,6 +248,23 @@ function formatarData(data) {
         dateStyle: "short",
         timeStyle: "short"
     });
+}
+
+async function desativarVideo() {
+    if (!confirm("Desativar o vídeo atual? O arquivo continuará salvo e poderá ser ativado novamente.")) return;
+
+    statusVideo.textContent = "Desativando vídeo...";
+    try {
+        const response = await fetch("/api/video/desativar", { method: "POST" });
+        const data = await response.json();
+        if (!response.ok) throw new Error(data.erro || "Erro ao desativar vídeo.");
+
+        statusVideo.textContent = "Vídeo desativado. O totem exibirá horários e imagens.";
+        await carregarVideos();
+    } catch (error) {
+        console.error(error);
+        statusVideo.textContent = "Erro: " + error.message;
+    }
 }
 
 async function excluirVideo(video) {

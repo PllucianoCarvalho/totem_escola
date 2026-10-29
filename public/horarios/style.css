@@ -1,0 +1,47 @@
+*{box-sizing:border-box}
+:root{color-scheme:dark;--fundo:#10131b;--painel:#191e29;--borda:#2b3445;--texto:#f5f7fb;--suave:#9caecb;--azul:#7b9cff;--verde:#32e6b5;--tag:#242f49}
+html,body{margin:0;min-height:100%;background:var(--fundo);color:var(--texto);font-family:Inter,system-ui,-apple-system,"Segoe UI",sans-serif}
+body{min-height:100vh}
+.painel{padding:9px 12px 14px;min-height:100vh;display:flex;flex-direction:column;gap:13px}
+.topo{min-height:91px;border:1px solid var(--borda);border-radius:17px;background:var(--painel);padding:12px 16px;display:flex;align-items:center;justify-content:space-between;gap:16px}
+.relogio{font-size:clamp(30px,4vw,38px);line-height:1.05;font-weight:800;letter-spacing:.3px}
+.dia{font-size:13px;color:var(--suave);margin-top:3px}
+.situacao{text-align:right;display:flex;flex-direction:column;gap:3px;font-size:14px}
+.situacao strong{color:var(--verde);font-weight:750}
+.situacao span{color:var(--suave);font-size:13px}
+.grade{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px;align-content:start}
+.cartao{min-height:82px;border:1px solid var(--borda);border-radius:14px;background:var(--painel);padding:13px 12px;overflow:hidden}
+.nome{font-size:15px;font-weight:750;line-height:1.25;margin:0 0 9px;overflow-wrap:anywhere}
+.etiqueta{display:inline-block;max-width:100%;background:var(--tag);color:#b9c9e8;border-radius:7px;padding:3px 7px;font-size:13px;line-height:1.25;overflow-wrap:anywhere}
+.vazio{grid-column:1/-1;border:1px solid var(--borda);border-radius:14px;background:var(--painel);padding:20px;color:var(--suave)}
+.atualizacao{text-align:right;color:#6f809c;font-size:11px;margin-top:auto;padding-top:3px}
+@media(max-width:700px){.grade{grid-template-columns:repeat(2,minmax(0,1fr))}.situacao{font-size:12px}.situacao span{font-size:11px}}
+@media(max-width:420px){.painel{padding:7px;gap:9px}.topo{padding:10px;gap:8px}.grade{gap:7px}.cartao{padding:10px;min-height:78px}.nome{font-size:14px}.etiqueta{font-size:12px}}
+
+.identificacao h1{font-size:16px;line-height:1.2;margin:0 0 4px;font-weight:800}.identificacao p{margin:0;color:#9caecb;font-size:12px}.identificacao{padding:2px 0}
+
+/* Totem vertical 9:16 */
+@media (orientation: portrait) and (min-width: 500px){
+  .painel{min-height:100dvh;padding:22px 24px 20px;gap:20px}
+  .identificacao h1{font-size:clamp(24px,2.4vw,34px)}
+  .identificacao p{font-size:clamp(15px,1.35vw,20px)}
+  .topo{min-height:140px;padding:22px 26px;border-radius:22px}
+  .relogio{font-size:clamp(48px,5.4vw,72px)}
+  .dia{font-size:clamp(17px,1.7vw,22px)}
+  .situacao{font-size:clamp(17px,1.7vw,23px)}
+  .situacao span{font-size:clamp(15px,1.4vw,20px)}
+  .grade{grid-template-columns:repeat(2,minmax(0,1fr));gap:16px}
+  .cartao{min-height:132px;padding:20px 18px;border-radius:18px}
+  .nome{font-size:clamp(21px,2.1vw,30px);margin-bottom:14px}
+  .etiqueta{font-size:clamp(16px,1.6vw,22px);padding:6px 10px;border-radius:9px}
+  .vazio{font-size:clamp(18px,1.8vw,24px);padding:26px}
+  .atualizacao{font-size:14px}
+}
+@media (orientation: portrait) and (max-width: 499px){
+  .painel{padding:10px;gap:10px}
+  .topo{min-height:94px;padding:12px}
+  .grade{grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}
+  .cartao{min-height:88px;padding:11px;border-radius:12px}
+  .nome{font-size:15px;margin-bottom:8px}
+  .etiqueta{font-size:12px}
+}

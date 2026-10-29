@@ -4,13 +4,14 @@ Sistema web para exibição de vídeos, sequência de imagens e avisos escolares
 
 ## Funcionalidades
 
-- Reprodução contínua do vídeo ativo.
+- Reprodução contínua do vídeo ativo, com opção de desativar ou excluir inclusive o vídeo atualmente ativo.
 - Sequência de várias imagens após o vídeo, cada uma com duração própria.
 - Gerenciamento individual de imagens publicadas.
 - Cadastro, edição e exclusão de avisos com período de exibição.
-- Painel administrativo protegido por sessão.
+- Painel administrativo protegido por sessão em `/amostradinho`; o endereço antigo `/admin` redireciona para o painel oficial.
 - Rotas de alteração da API protegidas por autenticação.
 - Armazenamento local de mídias e SQLite.
+- Importação da grade de professores a partir do relatório HTML do Urânia+, com prévia revisável antes da publicação.
 
 ## Requisitos
 
@@ -83,6 +84,20 @@ Em outro computador da mesma rede, substitua `IP_DO_SERVIDOR` pelo endereço exi
 
 Após entrar no painel, envie um vídeo em formato MP4 e clique em **Ativar**. A instalação começa sem vídeo ativo e sem avisos ou imagens cadastrados; esses dados são adicionados pelo painel.
 
+## Atualizar uma instalação existente
+
+Depois que as alterações forem integradas à branch `main`, atualize o servidor a partir da pasta do projeto:
+
+```bash
+bash atualizar.sh
+```
+
+O script só executa na branch `main`, exige que não haja alterações locais pendentes e verifica se a atualização pode ser feita por avanço direto. Antes de atualizar, cria um arquivo compactado de backup com `.env` e toda a pasta `dados/` em `../backups-totem/`. Em seguida, busca a `main` do GitHub e instala as dependências com `npm ci`.
+
+O atualizador não restaura nem substitui a pasta `dados/` durante a atualização: os horários versionados são atualizados pelo Git, enquanto vídeos, imagens, banco SQLite e demais dados locais permanecem no servidor. O arquivo `.env` também permanece no lugar.
+
+O script não reinicia automaticamente o serviço, pois o nome e o método de inicialização podem variar entre servidores. Após a atualização, reinicie o serviço conforme a configuração local e confira o login do painel, a tela do Totem e os horários. Não execute o atualizador antes de a PR de desenvolvimento ser integrada à `main`.
+
 ## Resolução de problemas
 
 - **Variáveis de ambiente ausentes:** confira se o arquivo `.env` existe e se `SESSION_SECRET`, `ADMIN_USERNAME` e `ADMIN_PASSWORD` estão preenchidos.
@@ -90,6 +105,10 @@ Após entrar no painel, envie um vídeo em formato MP4 e clique em **Ativar**. A
 - **Acesso a partir de outro computador:** confirme que ambos estão na rede local e que a porta TCP 3000 não está bloqueada pelo firewall.
 
 Se o servidor for configurado futuramente para iniciar pelo systemd executando `server.js` diretamente, a unidade também precisará carregar o arquivo `.env` (por exemplo, com `EnvironmentFile=`) ou usar a opção `--env-file` do Node.js. O comando documentado aqui é `npm start`.
+
+## Importação dos horários escolares
+
+A grade deve ser importada pelo painel administrativo usando o relatório geral exportado pelo Urânia+ em HTML (ou arquivo `.xls` que contenha HTML). A leitura mostra uma prévia e não publica automaticamente; revise os registros e publique somente depois de conferir os dados. A conversão do número de período em horário real usa a configuração da escola. A numeração por turno ainda precisa ser confirmada com o relatório oficial do ensino regular; não se deve presumir que os períodos reiniciam ou continuam entre turnos. O fluxo atual não usa PDFs como fonte de importação.
 
 ## API principal
 
@@ -101,7 +120,8 @@ As rotas de leitura usadas pela tela do Totem permanecem disponíveis sem login.
 | GET | `/api/videos` | Lista vídeos e vídeo ativo |
 | POST | `/api/video` | Envia um vídeo MP4 (login necessário) |
 | POST | `/api/video/ativar` | Define o vídeo ativo (login necessário) |
-| DELETE | `/api/videos/:video` | Exclui vídeo não ativo (login necessário) |
+| POST | `/api/video/desativar` | Desativa o vídeo atual sem apagar o arquivo (login necessário) |
+| DELETE | `/api/videos/:video` | Exclui um vídeo, inclusive o atualmente ativo (login necessário) |
 | GET | `/api/video` | Consulta vídeo ativo |
 | GET/POST | `/api/imagem` | Consulta a lista / adiciona imagem (POST exige login) |
 | DELETE | `/api/imagem/:id` | Exclui uma imagem (login necessário) |
@@ -109,8 +129,10 @@ As rotas de leitura usadas pela tela do Totem permanecem disponíveis sem login.
 
 ## Dados locais e versionamento
 
-O banco SQLite é criado automaticamente em `dados/totem.db`. Vídeos, imagens e configurações locais também são gravados na pasta `dados/`; esses dados não precisam estar no GitHub e não devem ser versionados.
+O banco SQLite é criado automaticamente em `dados/totem.db`. Vídeos, imagens enviadas e o banco de dados ficam em `dados/` e não devem ser versionados.
 
-O `.gitignore` exclui dependências instaladas, uploads, bancos de dados, configurações locais e backups. Versione o código e os arquivos de exemplo, não os dados reais da escola.
+A grade atual de horários da escola (`dados/horarios.json`) e sua configuração (`dados/horarios-config.json`) são mantidas no GitHub intencionalmente para que a instalação publicada já tenha os horários disponíveis. Atualize esses arquivos pelo fluxo de revisão e publicação da grade quando houver mudanças.
+
+O `.gitignore` exclui dependências instaladas, uploads de mídia, bancos de dados e backups. Não adicione credenciais, banco SQLite ou arquivos de mídia reais ao repositório.
 
 **Importante:** arquivos de mídia, bancos e dependências que tenham sido adicionados a commits antigos continuam no histórico do GitHub, mesmo quando removidos das versões mais recentes. Para eliminá-los do histórico é necessário reescrevê-lo e verificar novamente se algum segredo foi publicado.

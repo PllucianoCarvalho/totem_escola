@@ -1,0 +1,124 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Horários dos professores | Totem Escolar</title>
+  <link rel="stylesheet" href="/admin/horarios.css">
+</head>
+<body>
+  <main class="painel">
+    <nav class="atalhos-horarios" aria-label="Navegação da página">
+      <a class="voltar" href="/amostradinho/">← Voltar ao Amostradinho</a>
+      <a class="atalho-consulta" href="#consultaGrade">↓ Ir para consultar grade de aulas</a>
+    </nav>
+    <header>
+      <p class="sobretitulo">TOTEM ESCOLAR · ADMINISTRAÇÃO</p>
+      <h1>Horários dos professores</h1>
+      <p>Carregue a grade oficial atualizada ou importe o relatório geral do Urânia+ para conferir a grade antes de publicar.</p>
+    </header>
+    <section class="cartao" id="configuracaoHorario">
+      <h2>1. Configurar o funcionamento da escola</h2>
+      <p>Use o horário oficial da escola regular como referência inicial. Os horários configurados convertem o número do período em horário de relógio; confira a configuração antes de publicar.</p>
+      <div class="config-grade">
+        <label for="tipoEscola">Tipo de escola
+          <select id="tipoEscola">
+            <option value="regular">Escola regular</option>
+            <option value="integral">Escola em tempo integral</option>
+          </select>
+        </label>
+        <label for="inicioAulas">Horário de início das aulas
+          <input id="inicioAulas" type="time" value="07:00" required>
+        </label>
+        <label for="duracaoAula">Duração de cada aula (minutos)
+          <input id="duracaoAula" type="number" min="30" max="120" step="5" value="50" required>
+        </label>
+        <label for="inicioIntervalo">Início do intervalo para lanche
+          <input id="inicioIntervalo" type="time" value="09:30" required>
+        </label>
+        <label for="duracaoIntervalo">Duração do intervalo (minutos)
+          <input id="duracaoIntervalo" type="number" min="5" max="120" step="5" value="20" required>
+        </label>
+      </div>
+      <button id="salvarConfiguracao" type="button">Salvar configuração de horários</button>
+      <p id="statusConfiguracao" role="status"></p>
+      <p class="ajuda">Valores iniciais sugeridos: aulas de 50 minutos e intervalo de 20 minutos. Ajuste para os horários reais da escola. O tipo integral fica disponível desde já; a grade usa os períodos presentes no relatório importado.</p>
+    </section>
+    <section class="cartao">
+      <h2>2. Importar relatório geral do Urânia+</h2>
+      <p>Selecione o HTML exportado pelo Urânia+. Se o programa salvar uma página HTML com extensão .xls, também tentaremos ler esse arquivo.</p>
+      <div class="acoes-fonte-oficial">
+        <button id="carregarGradeOficial" type="button">Publicar grade oficial do professor Márcio</button>
+        <p>Carrega a grade atualizada do repositório do professor Márcio, mostra uma prévia e pede confirmação antes de substituir a grade publicada.</p>
+      </div>
+      <form id="relatorioForm">
+        <label for="relatorioGeral">Relatório geral de turmas (HTML ou XLS exportado pelo Urânia+)</label>
+        <input id="relatorioGeral" type="file" accept=".html,.htm,.xls,text/html,application/vnd.ms-excel" required>
+        <button id="importarRelatorio" type="submit">Ler relatório geral</button>
+      </form>
+      <p id="statusImportacao" role="status"></p>
+      <section id="painelConversao" class="painel-conversao" aria-live="polite"><h3>Prévia da conversão dos horários</h3><p id="estadoConversao">Selecione o relatório geral do Urânia+ para visualizar as aulas encontradas.</p><div id="previsualizacaoLeitura"></div></section>
+      <p class="ajuda">A importação preserva o número de período do HTML. Como a estrutura do relatório regular do Urânia+ ainda será confirmada, confira a prévia e não presuma que a numeração reinicia ou continua entre turnos. Ajustaremos a conversão após receber esse relatório.</p>
+    </section>
+    <section class="cartao">
+      <div class="titulo-linha">
+        <div><h2>3. Revisar os registros</h2><p>Os campos são editáveis. Use uma linha para cada aula/atribuição.</p></div>
+        <button id="adicionarLinha" class="secundario" type="button">+ Adicionar linha</button>
+      </div>
+      <div class="substituicao-lote">
+        <h3>Localizar e substituir professor</h3>
+        <p>Encontre registros pelo nome do professor e substitua o nome em todas as aulas correspondentes.</p>
+        <div class="substituicao-campos">
+          <label for="buscarProfessorLote">Localizar nome
+            <input id="buscarProfessorLote" type="search" placeholder="Ex.: João da Silva" autocomplete="off">
+          </label>
+          <label for="substituirProfessorLote">Substituir por
+            <input id="substituirProfessorLote" type="text" placeholder="Ex.: AUSENTE" autocomplete="off">
+          </label>
+          <button id="substituirTodosProfessores" type="button" disabled>Substituir todos</button>
+        </div>
+        <p id="resultadoSubstituicao" role="status" aria-live="polite">Digite um nome para localizar os registros.</p>
+      </div>
+      <div class="filtro-revisao">
+        <label for="filtroListaProfessor">Filtrar lista por professor
+          <input id="filtroListaProfessor" type="search" placeholder="Digite parte do nome do professor..." autocomplete="off">
+        </label>
+        <p id="resultadoFiltroLista" role="status" aria-live="polite">Exibindo todos os registros.</p>
+      </div>
+      <div class="tabela-wrap">
+        <table>
+          <thead><tr><th>Professor</th><th>Turma</th><th>Componente</th><th>Dia</th><th>Horário ou período</th><th></th></tr></thead>
+          <tbody id="linhasHorarios"><tr><td colspan="5" class="vazio">Importe o relatório geral ou adicione uma linha manualmente.</td></tr></tbody>
+        </table>
+      </div>
+      <button id="salvarHorarios" type="button">Salvar e publicar horários revisados</button>
+      <p id="statusSalvar" role="status"></p>
+    </section>
+    <section class="cartao" id="consultaGrade">
+      <h2>4. Consultar grade de aulas</h2>
+      <p>Filtre os horários publicados por professor, turma, componente curricular ou dia da semana. Os filtros podem ser combinados.</p>
+      <div class="filtros-grade">
+        <label>Professor <input id="filtroProfessor" type="search" placeholder="Nome do professor"></label>
+        <label>Turma <input id="filtroTurma" type="search" placeholder="Ex.: 2A, 9B"></label>
+        <label>Componente curricular <input id="filtroComponente" type="search" placeholder="Ex.: Física"></label>
+        <label>Dia da semana <select id="filtroDia"><option value="">Todos os dias</option></select></label>
+        <button id="limparFiltros" class="secundario" type="button">Limpar filtros</button>
+      </div>
+      <p id="resultadoFiltros" role="status">Carregando grade publicada...</p>
+      <div class="tabela-wrap">
+        <table class="tabela-consulta">
+          <thead><tr><th>Dia</th><th>Horário</th><th>Turma</th><th>Componente</th><th>Professor</th><th>Turno</th></tr></thead>
+          <tbody id="resultadosGrade"><tr><td colspan="6" class="vazio">Carregando horários...</td></tr></tbody>
+        </table>
+      </div>
+    </section>
+    <section class="cartao">
+      <h2>5. Última versão publicada</h2>
+      <p id="estadoAtual">Carregando...</p>
+    </section>
+  </main>
+  <button id="voltarTopo" class="botao-voltar-topo" type="button" aria-label="Voltar ao topo" title="Voltar ao topo">↑ <span>Voltar ao topo</span></button>
+  <script src="/admin/horarios-oficiais.js"></script>
+  <script src="/admin/horarios.js"></script>
+</body>
+</html>

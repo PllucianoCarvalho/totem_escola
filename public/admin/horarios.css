@@ -1,0 +1,57 @@
+*{box-sizing:border-box}body{margin:0;background:#f3f5f9;color:#172033;font-family:Arial,sans-serif}.painel{max-width:1200px;margin:0 auto;padding:28px 20px 60px}.voltar{color:#1749d1;text-decoration:none;font-weight:700}.sobretitulo{margin:26px 0 6px;color:#1749d1;font-size:12px;font-weight:700;letter-spacing:1.4px}h1{margin:0;font-size:clamp(28px,4vw,42px)}header>p:last-child{color:#647084}.cartao{margin-top:22px;padding:24px;background:#fff;border:1px solid #e0e5ed;border-radius:16px;box-shadow:0 5px 20px #1720330a}h2{margin:0 0 16px;font-size:21px}label{display:block;margin:10px 0;font-weight:700}input,select{font:inherit}input[type=file]{display:block;width:100%;margin:12px 0 18px;padding:12px;border:1px dashed #aab5c5;border-radius:8px;background:#f8fafc}button{padding:12px 18px;border:0;border-radius:8px;background:#1146f0;color:white;font-weight:700;cursor:pointer}button:hover{filter:brightness(.94)}button.secundario{background:#e8edff;color:#173a72}.ajuda,.cartao p{color:#647084;line-height:1.5}.titulo-linha{display:flex;align-items:center;justify-content:space-between;gap:16px;flex-wrap:wrap}.titulo-linha p{margin-top:-8px;color:#647084}.tabela-wrap{overflow-x:auto;margin:16px 0}table{width:100%;border-collapse:collapse;min-width:760px}th,td{padding:10px;border-bottom:1px solid #e6eaf0;text-align:left}th{background:#f6f8fc;font-size:13px}td input{width:100%;min-width:100px;padding:9px;border:1px solid #cbd3df;border-radius:6px}.remover{padding:8px 10px;background:#fee2e2;color:#991b1b}.vazio{text-align:center;color:#647084;padding:24px}#statusPdf,#statusSalvar{min-height:20px;font-weight:700;color:#1749d1}@media(max-width:600px){.painel{padding:18px 12px}.cartao{padding:16px}}
+.painel-conversao{margin-top:18px;padding:14px;border:1px solid #b9c9e8;border-radius:10px;background:#f7f9ff}.painel-conversao h3{margin-top:0}.painel-conversao table{display:block;max-width:100%;overflow-x:auto;border-collapse:collapse}.painel-conversao th,.painel-conversao td{padding:7px;border:1px solid #ccd4e2;text-align:left;font-size:13px}.painel-conversao details{margin:10px 0}
+
+/* Filtros e consulta da grade publicada */
+.filtros-grade{display:grid;grid-template-columns:repeat(4,minmax(150px,1fr));gap:12px;align-items:end;margin:18px 0 8px}
+.filtros-grade label{margin:0;font-size:13px}
+.filtros-grade input,.filtros-grade select{display:block;width:100%;min-width:0;margin-top:7px;padding:11px;border:1px solid #cbd3df;border-radius:8px;background:#fff;color:#172033}
+.filtros-grade button{min-height:40px}
+.tabela-consulta{min-width:760px}
+.tabela-consulta td{font-size:14px}
+@media(max-width:800px){.filtros-grade{grid-template-columns:repeat(2,minmax(0,1fr))}}
+@media(max-width:480px){.filtros-grade{grid-template-columns:1fr}.filtros-grade button{width:100%}}
+
+.atalhos-horarios{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap}
+.atalho-consulta{display:inline-flex;align-items:center;gap:7px;padding:11px 16px;border-radius:9px;background:#1146f0;color:#fff;text-decoration:none;font-weight:700}
+.atalho-consulta:hover{filter:brightness(.94)}
+#consultaGrade{scroll-margin-top:18px}
+@media(max-width:480px){.atalhos-horarios{align-items:stretch;flex-direction:column}.atalho-consulta{justify-content:center;text-align:center}}
+
+/* Botão flutuante para voltar ao topo a partir de qualquer seção */
+.botao-voltar-topo{position:fixed;right:22px;bottom:22px;z-index:1000;display:flex;align-items:center;gap:8px;padding:13px 17px;border:0;border-radius:999px;background:#1146f0;color:#fff;font-size:15px;font-weight:700;box-shadow:0 6px 22px #17203335;cursor:pointer}
+.botao-voltar-topo:hover{filter:brightness(.92);transform:translateY(-2px)}
+.botao-voltar-topo:focus-visible{outline:3px solid #efcc00;outline-offset:3px}
+@media(max-width:480px){.botao-voltar-topo{right:12px;bottom:12px;padding:12px 14px}.botao-voltar-topo span{font-size:13px}}
+
+.config-grade{display:grid;grid-template-columns:repeat(3,minmax(180px,1fr));gap:12px;margin:18px 0}
+.config-grade label{margin:0;font-size:14px}
+.config-grade input,.config-grade select{display:block;width:100%;margin-top:7px;padding:11px;border:1px solid #cbd3df;border-radius:8px;background:#fff;color:#172033}
+#statusConfiguracao{min-height:20px;font-weight:700;color:#1749d1}
+@media(max-width:800px){.config-grade{grid-template-columns:repeat(2,minmax(0,1fr))}}
+@media(max-width:480px){.config-grade{grid-template-columns:1fr}}
+
+/* Integração visual com o Amostradinho */
+.acoes-fonte-oficial{margin:16px 0 22px;padding:18px;border:1px solid #dce3e7;border-left:5px solid #12355a;border-radius:10px;background:#fff}
+.acoes-fonte-oficial button{background:#12355a;border-bottom:4px solid #008a3b}
+.acoes-fonte-oficial p{margin:12px 0 0;color:#66737d;line-height:1.5}
+.atalhos-horarios .voltar{color:#0067b0}
+
+/* Localizar e substituir em lote na revisão dos registros */
+.substituicao-lote{margin:18px 0;padding:18px;border:1px solid #cbd7eb;border-radius:12px;background:#f7f9ff}
+.substituicao-lote h3{margin:0 0 6px;color:#173a72;font-size:17px}
+.substituicao-lote>p{margin:6px 0 12px}
+.substituicao-campos{display:grid;grid-template-columns:minmax(180px,1fr) minmax(180px,1fr) auto;gap:12px;align-items:end}
+.substituicao-campos label{margin:0;font-size:13px}
+.substituicao-campos input{display:block;width:100%;min-width:0;margin-top:7px;padding:11px;border:1px solid #cbd3df;border-radius:8px;background:#fff}
+.substituicao-campos button{min-height:41px;white-space:nowrap}
+.substituicao-campos button:disabled{opacity:.45;cursor:not-allowed}
+#resultadoSubstituicao{margin:12px 0 0;font-size:13px;font-weight:700;color:#1749d1}
+@media(max-width:700px){.substituicao-campos{grid-template-columns:1fr}.substituicao-campos button{width:100%}}
+
+
+/* Filtro instantâneo da lista de revisão */
+.filtro-revisao{display:grid;grid-template-columns:minmax(220px,420px) 1fr;gap:12px;align-items:end;margin:18px 0 8px;padding:14px;border:1px solid #e0e5ed;border-radius:10px;background:#fbfcff}
+.filtro-revisao label{margin:0;font-size:13px}
+.filtro-revisao input{display:block;width:100%;margin-top:7px;padding:11px;border:1px solid #cbd3df;border-radius:8px;background:#fff}
+.filtro-revisao p{margin:0 0 10px;font-size:13px;font-weight:700;color:#1749d1}
+@media(max-width:600px){.filtro-revisao{grid-template-columns:1fr}}

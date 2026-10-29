@@ -19,7 +19,7 @@ const SESSION_SECRET = process.env.SESSION_SECRET;
 const USUARIO_ADMIN = process.env.ADMIN_USERNAME;
 const SENHA_ADMIN = process.env.ADMIN_PASSWORD;
 
-app.use(express.json());
+app.use(express.json({ limit: "10mb" }));
 
 app.use(session({
     secret: SESSION_SECRET,
@@ -63,9 +63,13 @@ const dadosPath = path.join(__dirname, "dados");
 const videosPath = path.join(dadosPath, "videos");
 const imagensPath = path.join(dadosPath, "imagens");
 const caminhoConfigImagens = path.join(dadosPath, "imagem.json");
+const horariosPath = path.join(dadosPath, "horarios");
+const caminhoHorarios = path.join(dadosPath, "horarios.json");
+const caminhoConfiguracaoHorarios = path.join(dadosPath, "horarios-config.json");
 
 fs.mkdirSync(videosPath, { recursive: true });
 fs.mkdirSync(imagensPath, { recursive: true });
+fs.mkdirSync(horariosPath, { recursive: true });
 
 const storageVideo = multer.diskStorage({
     destination: (req, file, cb) => cb(null, videosPath),
@@ -88,6 +92,37 @@ const storageImagem = multer.diskStorage({
     }
 });
 
+const CONFIG_HORARIOS_PADRAO = {
+    tipoEscola: "regular",
+    inicioAulas: "07:00",
+    duracaoAula: 50,
+    inicioIntervalo: "09:30",
+    duracaoIntervalo: 20
+};
+
+function lerConfiguracaoHorarios() {
+    if (!fs.existsSync(caminhoConfiguracaoHorarios)) return { ...CONFIG_HORARIOS_PADRAO };
+    try {
+        const dados = JSON.parse(fs.readFileSync(caminhoConfiguracaoHorarios, "utf8"));
+        return { ...CONFIG_HORARIOS_PADRAO, ...dados };
+    } catch {
+        return { ...CONFIG_HORARIOS_PADRAO };
+    }
+}
+
+function lerHorarios() {
+    if (!fs.existsSync(caminhoHorarios)) {
+        return { atualizadoEm: null, professores: [], aulas: [], configuracao: lerConfiguracaoHorarios() };
+    }
+    const dados = JSON.parse(fs.readFileSync(caminhoHorarios, "utf8"));
+    return {
+        atualizadoEm: dados.atualizadoEm || null,
+        professores: Array.isArray(dados.professores) ? dados.professores : [],
+        aulas: Array.isArray(dados.aulas) ? dados.aulas : [],
+        configuracao: lerConfiguracaoHorarios()
+    };
+}
+
 const uploadImagem = multer({
     storage: storageImagem,
     limits: { fileSize: 10 * 1024 * 1024 },
@@ -99,7 +134,21 @@ const uploadImagem = multer({
     }
 });
 
+app.get(["/admin", "/admin/"], (req, res) => {
+    res.redirect(301, "/amostradinho/");
+});
+
 app.use("/amostradinho", protegerAmostradinho);
+
+// A página de edição de horários também exige autenticação.
+app.get("/admin/horarios-oficiais.js", protegerAmostradinho, (req, res) => {
+    res.sendFile(path.join(__dirname, "public", "admin", "horarios-oficiais.js"));
+});
+
+app.get("/admin/horarios.html", protegerAmostradinho, (req, res) => {
+    res.sendFile(path.join(__dirname, "public", "admin", "horarios.html"));
+});
+
 app.use(express.static(path.join(__dirname, "public")));
 app.use("/videos", express.static(videosPath));
 app.use("/imagens", express.static(imagensPath));
@@ -125,16 +174,19 @@ app.get("/api/videos", (req, res) => {
 });
 
 app.delete("/api/videos/:video", protegerApi, (req, res) => {
-    const video = req.params.video;
-    const config = db.prepare("SELECT video FROM configuracoes WHERE id = 1").get();
-
-    if (config.video === video) {
-        return res.status(400).json({ erro: "Não é possível excluir o vídeo que está ativo." });
+    const video = path.basename(req.params.video);
+    if (!video || video !== req.params.video) {
+        return res.status(400).json({ erro: "Nome de vídeo inválido." });
     }
 
-    const caminhoVideo = path.join(videosPath, path.basename(video));
+    const caminhoVideo = path.join(videosPath, video);
     if (!fs.existsSync(caminhoVideo)) {
         return res.status(404).json({ erro: "Vídeo não encontrado." });
+    }
+
+    const config = db.prepare("SELECT video FROM configuracoes WHERE id = 1").get();
+    if (config.video === video) {
+        db.prepare("UPDATE configuracoes SET video = NULL WHERE id = 1").run();
     }
 
     fs.unlinkSync(caminhoVideo);
@@ -165,6 +217,11 @@ app.post("/api/video/ativar", protegerApi, (req, res) => {
 
     db.prepare("UPDATE configuracoes SET video = ? WHERE id = 1").run(video);
     res.json({ sucesso: true, video });
+});
+
+app.post("/api/video/desativar", protegerApi, (req, res) => {
+    db.prepare("UPDATE configuracoes SET video = NULL WHERE id = 1").run();
+    res.json({ sucesso: true });
 });
 
 app.get("/api/video", (req, res) => {
@@ -218,6 +275,124 @@ app.delete("/api/avisos/:id", protegerApi, (req, res) => {
     const resultado = db.prepare("DELETE FROM avisos WHERE id = ?").run(id);
     if (resultado.changes === 0) return res.status(404).json({ erro: "Aviso não encontrado." });
     res.json({ sucesso: true });
+});
+
+app.get("/", (req, res) => res.redirect("/login"));
+
+app.get("/horarios", (req, res) => {
+    res.sendFile(path.join(__dirname, "public", "horarios", "index.html"));
+});
+
+app.get("/api/horarios", (req, res) => {
+    try {
+        res.json(lerHorarios());
+    } catch (error) {
+        console.error("Erro ao ler horários:", error);
+        res.status(500).json({ erro: "Não foi possível carregar os horários." });
+    }
+});
+function minutosConfig(valor) { const [h, m] = valor.split(":").map(Number); return h * 60 + m; }
+
+app.put("/api/horarios/configuracao", protegerApi, (req, res) => {
+    const entrada = req.body || {};
+    const tipoEscola = String(entrada.tipoEscola || "").trim();
+    const inicioAulas = String(entrada.inicioAulas || "").trim();
+    const inicioIntervalo = String(entrada.inicioIntervalo || "").trim();
+    const duracaoAula = Number(entrada.duracaoAula);
+    const duracaoIntervalo = Number(entrada.duracaoIntervalo);
+    const horaValida = valor => /^([01]\d|2[0-3]):[0-5]\d$/.test(valor);
+
+    if (!["regular", "integral"].includes(tipoEscola)) {
+        return res.status(400).json({ erro: "Selecione escola regular ou integral." });
+    }
+    if (!horaValida(inicioAulas) || !horaValida(inicioIntervalo)) {
+        return res.status(400).json({ erro: "Informe horários válidos para o início das aulas e o intervalo." });
+    }
+    if (!Number.isInteger(duracaoAula) || duracaoAula < 30 || duracaoAula > 120) {
+        return res.status(400).json({ erro: "A duração da aula deve estar entre 30 e 120 minutos." });
+    }
+    if (!Number.isInteger(duracaoIntervalo) || duracaoIntervalo < 5 || duracaoIntervalo > 120) {
+        return res.status(400).json({ erro: "A duração do intervalo deve estar entre 5 e 120 minutos." });
+    }
+
+    if (minutosConfig(inicioIntervalo) < minutosConfig(inicioAulas) + duracaoAula) {
+        return res.status(400).json({ erro: "O intervalo deve começar após o término da primeira aula." });
+    }
+
+    const configuracao = { tipoEscola, inicioAulas, duracaoAula, inicioIntervalo, duracaoIntervalo };
+    fs.writeFileSync(caminhoConfiguracaoHorarios, JSON.stringify(configuracao, null, 2), "utf8");
+    res.json({ sucesso: true, configuracao });
+});
+
+app.post("/api/horarios/importar", protegerApi, (req, res) => {
+    const { aulas } = req.body;
+    if (!Array.isArray(aulas) || aulas.length === 0) return res.status(400).json({ erro: "Nenhuma aula válida foi identificada nos relatórios." });
+    const normalizadas = aulas.map(a => ({
+        dia: String(a.dia || "").trim(), inicio: String(a.inicio || "").trim(), fim: String(a.fim || "").trim(),
+        turma: String(a.turma || "").trim(), componente: String(a.componente || "").trim(),
+        professor: String(a.professor || "").trim(), turno: String(a.turno || "").trim(), origem: String(a.origem || "").trim()
+    })).filter(a => a.dia && a.inicio && a.fim && a.turma && a.professor && a.componente);
+    if (!normalizadas.length) return res.status(400).json({ erro: "Os dados extraídos não contêm aulas completas com professor, turma e componente." });
+    const anterior = lerHorarios();
+    const dados = { atualizadoEm: new Date().toISOString(), aulas: normalizadas, professores: normalizadas.map(a => ({ professor: a.professor, sala: "", turma: a.turma, componente: a.componente, horario: a.dia + " " + a.inicio, dia: a.dia, inicio: a.inicio, fim: a.fim, turno: a.turno })) };
+    fs.writeFileSync(caminhoHorarios, JSON.stringify(dados, null, 2), "utf8");
+    res.json({ sucesso: true, total: normalizadas.length, atualizadoEm: dados.atualizadoEm });
+});
+app.put("/api/horarios", protegerApi, (req, res) => {
+    const { professores, aulas } = req.body;
+    if (!Array.isArray(professores)) {
+        return res.status(400).json({ erro: "A lista de horários é inválida." });
+    }
+
+    const normalizados = professores.map((item) => ({
+        professor: String(item.professor || "").trim(),
+        sala: String(item.sala || "").trim(),
+        turma: String(item.turma || "").trim(),
+        componente: String(item.componente || "").trim(),
+        horario: String(item.horario || "").trim(),
+        dia: String(item.dia || "").trim(),
+        inicio: String(item.inicio || "").trim(),
+        fim: String(item.fim || "").trim(),
+        turno: String(item.turno || "").trim(),
+        periodo: String(item.periodo || "").trim(),
+        origem: String(item.origem || "").trim()
+    }));
+
+    if (normalizados.some(item => !item.professor || !item.turma || !item.componente)) {
+        return res.status(400).json({ erro: "Preencha professor, turma e componente em todas as linhas." });
+    }
+
+    const anterior = lerHorarios();
+    const aulasRecebidas = Array.isArray(aulas) ? aulas : normalizados;
+    const aulasNormalizadas = aulasRecebidas.map((item) => {
+        let dia = String(item.dia || "").trim();
+        let inicio = String(item.inicio || "").trim();
+        let fim = String(item.fim || "").trim();
+        const horario = String(item.horario || "").trim();
+        if ((!dia || !inicio || !fim) && horario) {
+            const m = horario.match(/^(segunda-feira|terça-feira|quarta-feira|quinta-feira|sexta-feira|sábado|domingo)\s+(\d{2}:\d{2})\s*[–-]\s*(\d{2}:\d{2})$/i);
+            if (m) { dia = dia || m[1]; inicio = inicio || m[2]; fim = fim || m[3]; }
+        }
+        return {
+            dia, inicio, fim,
+            turma: String(item.turma || "").trim(),
+            componente: String(item.componente || "").trim(),
+            professor: String(item.professor || "").trim(),
+            turno: String(item.turno || "").trim(),
+            horario: String(item.horario || "").trim(),
+            periodo: String(item.periodo || "").trim(),
+            origem: String(item.origem || "").trim()
+        };
+    }).filter(item => item.professor && item.turma && item.componente);
+
+    const dados = {
+        atualizadoEm: new Date().toISOString(),
+        professores: normalizados,
+        aulas: aulasNormalizadas.length ? aulasNormalizadas : anterior.aulas
+    };
+
+    fs.writeFileSync(caminhoHorarios, JSON.stringify(dados, null, 2), "utf8");
+    res.json({ sucesso: true, total: normalizados.length, totalAulas: dados.aulas.length, atualizadoEm: dados.atualizadoEm });
 });
 
 function lerConfigImagens() {
