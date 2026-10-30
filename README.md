@@ -68,6 +68,99 @@ npm start
 
 Mantenha o terminal aberto enquanto o sistema estiver em execução. Para encerrar o servidor, pressione `Ctrl+C`.
 
+## Configurar o computador que exibe o Totem (tela)
+
+Esta etapa é feita no **computador conectado à TV/tela**, não no servidor Node.js. O computador da tela usado neste projeto foi configurado com Linux Mint, usuário dedicado `totem`, login automático e Firefox em modo quiosque (tela cheia, sem barras do navegador).
+
+### 1. Criar/usar o usuário da tela
+
+Se ainda não existir, crie o usuário:
+
+```bash
+sudo adduser totem
+```
+
+Configure o login automático para esse usuário em **Configurações do Sistema → Tela de Login → Login automático**. O usuário precisa entrar na sessão gráfica para que o Firefox seja iniciado.
+
+### 2. Instalar Firefox e ferramentas de tela
+
+```bash
+sudo apt update
+sudo apt install firefox x11-xserver-utils xdotool
+```
+
+Se o Firefox já estiver instalado, não é necessário reinstalá-lo.
+
+### 3. Criar o script de inicialização da tela
+
+Entre na sessão gráfica do usuário `totem` e crie a pasta e o script:
+
+```bash
+mkdir -p ~/bin
+nano ~/bin/iniciar-totem-tela.sh
+```
+
+Conteúdo do arquivo:
+
+```bash
+#!/bin/bash
+
+# Impede o protetor de tela e o desligamento automático do monitor nesta sessão X11
+xset s off
+xset s noblank
+xset -dpms
+
+# Move o ponteiro para o canto inferior direito para não ficar sobre o conteúdo
+xdotool mousemove 9999 9999
+
+# Abre a tela do Totem em modo quiosque
+firefox --kiosk http://IP_DO_SERVIDOR:3000/totem
+```
+
+Troque `IP_DO_SERVIDOR` pelo IP fixo ou reservado do computador servidor. Salve e torne o script executável:
+
+```bash
+chmod +x ~/bin/iniciar-totem-tela.sh
+```
+
+> Os comandos `xset` desativam o protetor de tela/DPMS apenas na sessão gráfica atual. Para evitar suspensão do computador pelo gerenciador de energia, abra **Configurações do Sistema → Gerenciamento de energia** e configure a suspensão como **Nunca** quando ligado à tomada. Se houver opções separadas para apagar a tela, bloquear a sessão ou suspender por inatividade, desative-as também. Os nomes podem variar conforme a edição do Linux Mint.
+
+### 4. Iniciar automaticamente em modo quiosque
+
+Crie o arquivo de inicialização automática:
+
+```bash
+mkdir -p ~/.config/autostart
+nano ~/.config/autostart/totem.desktop
+```
+
+Conteúdo:
+
+```ini
+[Desktop Entry]
+Type=Application
+Name=Totem Escolar
+Exec=/home/totem/bin/iniciar-totem-tela.sh
+Terminal=false
+X-GNOME-Autostart-enabled=true
+```
+
+Se o usuário dedicado tiver outro nome ou diretório pessoal, ajuste o caminho de `Exec`. Remova ou desative uma entrada antiga que inicie o Firefox diretamente para evitar abrir duas janelas.
+
+Reinicie o computador e confira se o login automático abre o Firefox diretamente em `http://IP_DO_SERVIDOR:3000/totem`.
+
+### 5. Orientação da tela
+
+Configure a orientação como **Retrato (vertical)** em **Configurações do Sistema → Tela**. Faça a rotação pela interface gráfica e teste antes de tornar qualquer comando de rotação permanente. Uma configuração incorreta no LightDM pode causar tela preta ou ciclo de login.
+
+### Observações
+
+- O modo quiosque do Firefox abre a página sem a interface normal do navegador; ele não inicia o servidor. O servidor precisa estar ligado e acessível pela rede.
+- Reserve um IP para o servidor no roteador ou atualize o endereço no script se o IP mudar.
+- Se a sessão for Wayland, os comandos `xset` e `xdotool` podem não funcionar como esperado; esta configuração foi pensada para uma sessão X11.
+- Não use suspensão automática no computador da tela. O monitor pode apagar por configurações próprias, mesmo que o navegador continue aberto.
+- A configuração do servidor (Node.js/systemd/porta 3000) está documentada nas seções anteriores; esta seção trata somente do computador que exibe a página.
+
 ## Acesso pela rede local
 
 Descubra o IP do servidor com:
