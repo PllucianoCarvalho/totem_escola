@@ -68,6 +68,41 @@ npm start
 
 Mantenha o terminal aberto enquanto o sistema estiver em execução. Para encerrar o servidor, pressione `Ctrl+C`.
 
+## Configuração do computador dedicado ao Totem
+
+Se o computador for utilizado exclusivamente como Totem e a conta `totem` perder privilégios administrativos por segurança, faça antes a instalação dos programas que exigem `sudo`.
+
+### Instalar o unclutter
+
+O `unclutter` oculta automaticamente o ponteiro do mouse quando ele fica parado, evitando que o cursor apareça sobre o conteúdo exibido na tela.
+
+**ATENÇÃO: instale o unclutter antes de remover o usuário `totem` do grupo `sudo`.** Depois da remoção, a conta não poderá instalar programas com `apt` por conta própria.
+
+Com uma conta que ainda tenha privilégios administrativos, execute:
+
+```bash
+sudo apt update
+sudo apt install unclutter
+```
+
+Confira se a instalação foi concluída:
+
+```bash
+unclutter --version
+```
+
+### Remover os privilégios administrativos do usuário Totem
+
+Somente depois de instalar o `unclutter` e todos os demais programas necessários, remova o usuário `totem` do grupo `sudo`:
+
+```bash
+sudo deluser totem sudo
+```
+
+Faça essa operação a partir de uma conta administrativa. Depois, encerre a sessão e entre novamente para que a alteração dos grupos seja aplicada.
+
+**Atenção:** após essa etapa, o usuário `totem` não poderá executar comandos administrativos com `sudo`, instalar programas ou atualizar pacotes do sistema. Para futuras instalações e manutenções, utilize outra conta administradora. Não remova o último usuário administrador do computador.
+
 ## Acesso pela rede local
 
 Descubra o IP do servidor com:
